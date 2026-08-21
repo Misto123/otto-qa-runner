@@ -7,12 +7,39 @@
 <style>
 :root{color-scheme:dark;--bg:#101214;--panel:#181b1f;--panel2:#20242a;--text:#f3f4f6;--muted:#9ba3af;--line:#30363d;--accent:#ffb454;--good:#8ee6b2;--danger:#ff8c8c}
 *{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at 85% 0,#3b2a16 0,transparent 34%),var(--bg);color:var(--text);font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
-main{max-width:980px;margin:0 auto;padding:44px 22px 72px}.eyebrow{color:var(--accent);font-weight:700;letter-spacing:.12em;text-transform:uppercase;font-size:12px}h1{font-size:clamp(30px,5vw,52px);line-height:1.05;margin:12px 0 10px;letter-spacing:-.04em}h1 span{color:var(--accent)}.intro{max-width:680px;color:var(--muted);margin:0 0 30px}.panel{background:rgba(24,27,31,.9);border:1px solid var(--line);border-radius:18px;padding:24px;margin-top:16px;box-shadow:0 18px 50px #0004}.panel h2{font-size:17px;margin:0 0 18px}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}.full{grid-column:1/-1}label{display:block;color:#d9dde3;font-weight:650;margin-bottom:7px}input,select{width:100%;border:1px solid var(--line);background:var(--panel2);color:var(--text);border-radius:10px;padding:12px 13px;font:inherit;outline:none}input:focus,select:focus{border-color:var(--accent);box-shadow:0 0 0 3px #ffb45422}input:invalid{border-color:var(--danger)}.hint{font-size:12px;color:var(--muted);margin-top:5px}.profiles{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.checkrow{display:flex;align-items:center;gap:10px;background:var(--panel2);border:1px solid var(--line);padding:11px;border-radius:10px}.checkrow input{width:auto;accent-color:var(--accent)}.checkrow button{padding:6px 10px;font-size:12px;margin-left:auto}.switches{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}.switches label{display:flex;align-items:center;gap:10px;background:var(--panel2);padding:12px;border-radius:10px;margin:0;font-weight:500}.switches input{width:auto;accent-color:var(--accent)}.actions{display:flex;gap:12px;align-items:center;margin-top:22px;flex-wrap:wrap}button{border:0;border-radius:10px;padding:12px 17px;font:700 14px inherit;cursor:pointer}button.primary{background:var(--accent);color:#1d160c}button.secondary{background:var(--panel2);color:var(--text);border:1px solid var(--line)}button.danger{background:var(--danger);color:#1d0c0c}button:hover{filter:brightness(1.08)}button:disabled{opacity:.5;cursor:not-allowed}.notice{border-left:3px solid var(--accent);background:#ffb4540e;padding:12px 14px;color:#d7dbe1;font-size:13px;border-radius:6px;margin-top:16px}.error{display:none;border-left:3px solid var(--danger);background:#ff8c8c0e;padding:12px 14px;color:var(--danger);font-size:13px;border-radius:6px;margin-top:16px}.output{display:none}.output pre{background:var(--panel2);padding:16px;border-radius:10px;overflow-x:auto;font-size:13px;line-height:1.6;margin:0 0 12px}.output .actions{margin-top:12px}.profile-add{display:flex;gap:8px;margin-top:12px}.profile-add input{flex:1}
+main{max-width:980px;margin:0 auto;padding:44px 22px 72px}.eyebrow{color:var(--accent);font-weight:700;letter-spacing:.12em;text-transform:uppercase;font-size:12px}h1{font-size:clamp(30px,5vw,52px);line-height:1.05;margin:12px 0 10px;letter-spacing:-.04em}h1 span{color:var(--accent)}.intro{max-width:680px;color:var(--muted);margin:0 0 30px}.panel{background:rgba(24,27,31,.9);border:1px solid var(--line);border-radius:18px;padding:24px;margin-top:16px;box-shadow:0 18px 50px #0004}.panel h2{font-size:17px;margin:0 0 18px}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}.full{grid-column:1/-1}label{display:block;color:#d9dde3;font-weight:650;margin-bottom:7px}input,select{width:100%;border:1px solid var(--line);background:var(--panel2);color:var(--text);border-radius:10px;padding:12px 13px;font:inherit;outline:none}input:focus,select:focus{border-color:var(--accent);box-shadow:0 0 0 3px #ffb45422}input:invalid{border-color:var(--danger)}.hint{font-size:12px;color:var(--muted);margin-top:5px}.profiles{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.checkrow{display:flex;align-items:center;gap:10px;background:var(--panel2);border:1px solid var(--line);padding:11px;border-radius:10px}.checkrow input{width:auto;accent-color:var(--accent)}.checkrow button{padding:6px 10px;font-size:12px;margin-left:auto}.switches{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}.switches label{display:flex;align-items:center;gap:10px;background:var(--panel2);padding:12px;border-radius:10px;margin:0;font-weight:500}.switches input{width:auto;accent-color:var(--accent)}.actions{display:flex;gap:12px;align-items:center;margin-top:22px;flex-wrap:wrap}button{border:0;border-radius:10px;padding:12px 17px;font:700 14px inherit;cursor:pointer}button.primary{background:var(--accent);color:#1d160c}button.secondary{background:var(--panel2);color:var(--text);border:1px solid var(--line)}button.danger{background:var(--danger);color:#1d0c0c}button:hover{filter:brightness(1.1)}.error,.notice{padding:14px;border-radius:10px;margin-top:14px;font-size:13px;line-height:1.6}.error{background:#3d1a1a;border:1px solid var(--danger);color:var(--danger);display:none}.notice{background:#2a2416;border:1px solid #5a4a1e;color:#f0d89f}.output{display:none}.output pre{background:var(--panel2);padding:16px;border-radius:8px;overflow-x:auto;font:13px "SF Mono",Monaco,Consolas,monospace;color:var(--good);margin:0 0 14px}.profile-add{display:flex;gap:10px;margin-top:14px}.profile-add input{flex:1}
+#loginScreen{display:flex;align-items:center;justify-content:center;min-height:100vh;padding:22px}#loginPanel{width:100%;max-width:420px}#loginPanel h1{text-align:center}#loginPanel .intro{text-align:center;margin-bottom:24px}#loginForm{margin-top:0}#loginForm .panel{margin-top:0}#loginError{background:#3d1a1a;border:1px solid var(--danger);color:var(--danger);padding:12px;border-radius:10px;margin-top:12px;font-size:13px;display:none}#appContent{display:none}#logoutBtn{margin-left:auto}.security-warning{background:#3d1a1a;border:2px solid var(--danger);padding:18px;border-radius:10px;margin-bottom:20px;font-size:13px;line-height:1.6}.security-warning strong{color:var(--danger);display:block;margin-bottom:8px;font-size:14px}
 </style>
 </head>
 <body>
+<div id="loginScreen">
+  <div id="loginPanel">
+    <div class="eyebrow" style="text-align:center">AdsPower · website QA</div>
+    <h1>Access <span>required</span></h1>
+    <p class="intro">Enter password to access the configuration form.</p>
+    <div class="security-warning">
+      <strong>⚠️ Security Notice</strong>
+      This is a convenience gate only, not real security. The password is visible in the page source code. For actual protection, use server-side authentication or Vercel password protection.
+    </div>
+    <form id="loginForm">
+      <section class="panel">
+        <label for="passwordInput">Password</label>
+        <input id="passwordInput" type="password" placeholder="Enter password" required autofocus>
+        <div id="loginError"></div>
+        <div class="actions">
+          <button class="primary" type="submit">Access Form</button>
+        </div>
+      </section>
+    </form>
+  </div>
+</div>
+
+<div id="appContent">
 <main>
-  <div class="eyebrow">AdsPower · website QA</div>
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px">
+    <div class="eyebrow">AdsPower · website QA</div>
+    <button id="logoutBtn" class="secondary" type="button">Lock</button>
+  </div>
   <h1>Configure a <span>browser test</span></h1>
   <p class="intro">A compact run form for testing a product journey across existing AdsPower profiles. This web page generates configuration files only and can be deployed to Vercel. The actual runner must execute locally on your Mac where AdsPower is installed, as it requires access to the AdsPower Local API at http://local.adspower.com:50325.</p>
   <form id="qaForm">
@@ -66,9 +93,43 @@ main{max-width:980px;margin:0 auto;padding:44px 22px 72px}.eyebrow{color:var(--a
     </div>
   </section>
 </main>
+</div>
 <script>
 const $=id=>document.getElementById(id);
 const STORAGE_KEY='qaFormData';
+const CORRECT_PASSWORD='rereeu';
+
+// Password gate
+function showLoginScreen() {
+  $('loginScreen').style.display = 'flex';
+  $('appContent').style.display = 'none';
+}
+
+function showAppContent() {
+  $('loginScreen').style.display = 'none';
+  $('appContent').style.display = 'block';
+}
+
+$('loginForm').addEventListener('submit', e => {
+  e.preventDefault();
+  const password = $('passwordInput').value;
+  
+  if (password === CORRECT_PASSWORD) {
+    showAppContent();
+    $('passwordInput').value = '';
+    $('loginError').style.display = 'none';
+  } else {
+    $('loginError').textContent = 'Incorrect password. Please try again.';
+    $('loginError').style.display = 'block';
+    $('passwordInput').value = '';
+    $('passwordInput').focus();
+  }
+});
+
+$('logoutBtn').addEventListener('click', () => {
+  showLoginScreen();
+  $('passwordInput').focus();
+});
 
 // Validation functions
 function validateURL(input) {
@@ -325,8 +386,11 @@ $('qaForm').addEventListener('reset', () => {
 $('qaForm').addEventListener('input', saveFormData);
 $('qaForm').addEventListener('change', saveFormData);
 
-// Restore on load
-window.addEventListener('DOMContentLoaded', restoreFormData);
+// Initialize: show login screen on load
+window.addEventListener('DOMContentLoaded', () => {
+  showLoginScreen();
+  restoreFormData();
+});
 </script>
 </body>
 </html>

@@ -2,6 +2,21 @@
 
 A professional QA automation tool for testing product journeys on Otto.de using AdsPower browser profiles. The tool consists of a web-based configuration generator and a local Node.js runner that integrates with AdsPower's Local API.
 
+## ⚠️ Security Warning: Password Gate
+
+**The web configuration form includes a client-side password gate. This is NOT real security.**
+
+- The password is visible in the HTML source code (line inspection reveals it)
+- Anyone with browser DevTools can bypass the gate in seconds
+- This is a convenience gate only, meant to prevent accidental access
+- **For actual security, use:**
+  - Vercel's built-in password protection
+  - Server-side authentication
+  - Environment-based access controls
+  - IP allowlisting
+
+**Do not rely on this client-side gate for protecting sensitive data or production systems.**
+
 ## Architecture Overview
 
 This project is split into two components:
