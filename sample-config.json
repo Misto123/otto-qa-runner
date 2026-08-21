@@ -1,0 +1,42 @@
+{
+  "test_name": "Otto QA Sample Test",
+  "site_url": "https://www.otto.de",
+  "product_url": null,
+  "profiles": [
+    "k1fgmwtq",
+    "k1f39ocj",
+    "k1e3u6vd"
+  ],
+  "search": {
+    "keywords": "schuhe",
+    "result_position": 4
+  },
+  "actions": {
+    "visit_product": true,
+    "scroll": {
+      "enabled": true,
+      "min": 2,
+      "max": 4
+    },
+    "add_to_cart": false,
+    "remove_after_test": true,
+    "accept_cookies": true
+  },
+  "schedule": {
+    "repetitions_per_day": 1,
+    "timezone": "Europe/Amsterdam"
+  },
+  "wait_profile": "human-varied",
+  "limits": {
+    "stop_on_captcha": true,
+    "stop_on_checkout": true,
+    "stop_on_payment": true
+  },
+  "report": {
+    "screenshots": true
+  },
+  "cleanup": {
+    "close_tabs": true,
+    "stop_profiles": true
+  }
+}

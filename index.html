@@ -1,0 +1,332 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Browser QA Run Configurator</title>
+<style>
+:root{color-scheme:dark;--bg:#101214;--panel:#181b1f;--panel2:#20242a;--text:#f3f4f6;--muted:#9ba3af;--line:#30363d;--accent:#ffb454;--good:#8ee6b2;--danger:#ff8c8c}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at 85% 0,#3b2a16 0,transparent 34%),var(--bg);color:var(--text);font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+main{max-width:980px;margin:0 auto;padding:44px 22px 72px}.eyebrow{color:var(--accent);font-weight:700;letter-spacing:.12em;text-transform:uppercase;font-size:12px}h1{font-size:clamp(30px,5vw,52px);line-height:1.05;margin:12px 0 10px;letter-spacing:-.04em}h1 span{color:var(--accent)}.intro{max-width:680px;color:var(--muted);margin:0 0 30px}.panel{background:rgba(24,27,31,.9);border:1px solid var(--line);border-radius:18px;padding:24px;margin-top:16px;box-shadow:0 18px 50px #0004}.panel h2{font-size:17px;margin:0 0 18px}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}.full{grid-column:1/-1}label{display:block;color:#d9dde3;font-weight:650;margin-bottom:7px}input,select{width:100%;border:1px solid var(--line);background:var(--panel2);color:var(--text);border-radius:10px;padding:12px 13px;font:inherit;outline:none}input:focus,select:focus{border-color:var(--accent);box-shadow:0 0 0 3px #ffb45422}input:invalid{border-color:var(--danger)}.hint{font-size:12px;color:var(--muted);margin-top:5px}.profiles{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.checkrow{display:flex;align-items:center;gap:10px;background:var(--panel2);border:1px solid var(--line);padding:11px;border-radius:10px}.checkrow input{width:auto;accent-color:var(--accent)}.checkrow button{padding:6px 10px;font-size:12px;margin-left:auto}.switches{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}.switches label{display:flex;align-items:center;gap:10px;background:var(--panel2);padding:12px;border-radius:10px;margin:0;font-weight:500}.switches input{width:auto;accent-color:var(--accent)}.actions{display:flex;gap:12px;align-items:center;margin-top:22px;flex-wrap:wrap}button{border:0;border-radius:10px;padding:12px 17px;font:700 14px inherit;cursor:pointer}button.primary{background:var(--accent);color:#1d160c}button.secondary{background:var(--panel2);color:var(--text);border:1px solid var(--line)}button.danger{background:var(--danger);color:#1d0c0c}button:hover{filter:brightness(1.08)}button:disabled{opacity:.5;cursor:not-allowed}.notice{border-left:3px solid var(--accent);background:#ffb4540e;padding:12px 14px;color:#d7dbe1;font-size:13px;border-radius:6px;margin-top:16px}.error{display:none;border-left:3px solid var(--danger);background:#ff8c8c0e;padding:12px 14px;color:var(--danger);font-size:13px;border-radius:6px;margin-top:16px}.output{display:none}.output pre{background:var(--panel2);padding:16px;border-radius:10px;overflow-x:auto;font-size:13px;line-height:1.6;margin:0 0 12px}.output .actions{margin-top:12px}.profile-add{display:flex;gap:8px;margin-top:12px}.profile-add input{flex:1}
+</style>
+</head>
+<body>
+<main>
+  <div class="eyebrow">AdsPower · website QA</div>
+  <h1>Configure a <span>browser test</span></h1>
+  <p class="intro">A compact run form for testing a product journey across existing AdsPower profiles. This web page generates configuration files only and can be deployed to Vercel. The actual runner must execute locally on your Mac where AdsPower is installed, as it requires access to the AdsPower Local API at http://local.adspower.com:50325.</p>
+  <form id="qaForm">
+    <section class="panel"><h2>Target</h2><div class="grid">
+      <div class="full"><label for="site">Site URL</label><input id="site" type="url" placeholder="https://www.otto.de" value="https://www.otto.de" required></div>
+      <div class="full"><label for="product">Product URL <span class="hint">optional — use when the test should verify a specific product</span></label><input id="product" type="url" placeholder="https://www.otto.de/p/example/"></div>
+      <div class="full"><label for="keywords">Search keywords</label><input id="keywords" type="text" placeholder="schuhe" required><div class="hint">Use one query per run.</div></div>
+      <div><label for="position">Result position</label><input id="position" type="number" min="1" max="100" value="4" required></div>
+      <div><label for="visitCount">Product visits per profile</label><input id="visitCount" type="number" min="1" max="10" value="1" required></div>
+    </div></section>
+    <section class="panel"><h2>Existing AdsPower profiles</h2>
+      <div id="profilesContainer" class="profiles">
+        <label class="checkrow"><input type="checkbox" name="profile" value="k1fgmwtq" checked> k1fgmwtq <button type="button" class="danger" onclick="removeProfile(this)">Remove</button></label>
+        <label class="checkrow"><input type="checkbox" name="profile" value="k1f39ocj" checked> k1f39ocj <button type="button" class="danger" onclick="removeProfile(this)">Remove</button></label>
+        <label class="checkrow"><input type="checkbox" name="profile" value="k1e3u6vd" checked> k1e3u6vd <button type="button" class="danger" onclick="removeProfile(this)">Remove</button></label>
+      </div>
+      <div class="profile-add">
+        <input id="newProfile" type="text" placeholder="Enter profile ID (e.g., k1abc123)" pattern="[a-zA-Z0-9_-]+" title="Profile ID should contain only letters, numbers, hyphens, and underscores">
+        <button type="button" class="secondary" onclick="addProfile()">Add Profile</button>
+      </div>
+      <div class="hint">Add or replace IDs with existing profiles only. The runner uses existing profiles and never creates or deletes them. Profile IDs can be found in your AdsPower application.</div>
+    </section>
+    <section class="panel"><h2>Interaction plan</h2><div class="grid">
+      <div><label for="minScroll">Minimum scrolls</label><input id="minScroll" type="number" min="0" max="20" value="2" required></div>
+      <div><label for="maxScroll">Maximum scrolls</label><input id="maxScroll" type="number" min="0" max="20" value="4" required></div>
+      <div><label for="delay">Wait profile</label><select id="delay"><option value="human-varied">Human-like varied waits</option><option value="standard">Standard waits</option></select></div>
+      <div><label for="repetitions">QA repetitions per day</label><input id="repetitions" type="number" min="1" max="10" value="1" required></div>
+      <div class="full switches">
+        <label><input id="cart" type="checkbox"> Add to cart for QA</label>
+        <label><input id="remove" type="checkbox" checked> Remove test item afterward</label>
+        <label><input id="cookies" type="checkbox" checked> Accept cookie dialogs</label>
+        <label><input id="screenshots" type="checkbox" checked> Save screenshots</label>
+        <label><input id="cleanup" type="checkbox" checked> Close tabs and stop profiles</label>
+        <label><input id="captcha" type="checkbox" checked> Stop on CAPTCHA/challenge</label>
+      </div>
+    </div>
+    <div class="notice">Safety defaults: no checkout, payment, account changes, or CAPTCHA solving. The runner stops immediately on security challenges and always cleans up profiles in the finally block.</div></section>
+    <div class="actions">
+      <button class="primary" type="submit">Generate test configuration</button>
+      <button class="secondary" type="reset">Reset</button>
+      <button class="secondary" type="button" onclick="clearSavedData()">Clear Saved Data</button>
+    </div>
+    <div id="error" class="error"></div>
+  </form>
+  <section id="output" class="output panel">
+    <h2>Generated configuration</h2>
+    <pre id="json"></pre>
+    <div class="actions">
+      <button id="copy" class="secondary" type="button">Copy JSON</button>
+      <button id="download" class="secondary" type="button">Download JSON</button>
+    </div>
+  </section>
+</main>
+<script>
+const $=id=>document.getElementById(id);
+const STORAGE_KEY='qaFormData';
+
+// Validation functions
+function validateURL(input) {
+  if (!input.value.trim()) return input.id === 'product' || true;
+  try {
+    new URL(input.value.trim());
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function validateForm() {
+  const min = +$('minScroll').value;
+  const max = +$('maxScroll').value;
+  const profiles = [...document.querySelectorAll('input[name=profile]:checked')].map(x=>x.value);
+  
+  if (min > max) {
+    showError('Minimum scrolls cannot exceed maximum scrolls.');
+    return false;
+  }
+  if (!profiles.length) {
+    showError('Select at least one existing profile.');
+    return false;
+  }
+  if ($('site').value.trim() && !validateURL($('site'))) {
+    showError('Site URL is invalid.');
+    return false;
+  }
+  if ($('product').value.trim() && !validateURL($('product'))) {
+    showError('Product URL is invalid.');
+    return false;
+  }
+  if (!$('keywords').value.trim()) {
+    showError('Search keywords are required.');
+    return false;
+  }
+  
+  return true;
+}
+
+function showError(msg) {
+  $('error').textContent = msg;
+  $('error').style.display = 'block';
+  setTimeout(() => $('error').style.display = 'none', 5000);
+}
+
+// localStorage functions
+function saveFormData() {
+  const data = {
+    site: $('site').value.trim(),
+    product: $('product').value.trim(),
+    keywords: $('keywords').value.trim(),
+    position: $('position').value,
+    visitCount: $('visitCount').value,
+    profiles: [...document.querySelectorAll('input[name=profile]')].map(x => ({value: x.value, checked: x.checked})),
+    minScroll: $('minScroll').value,
+    maxScroll: $('maxScroll').value,
+    delay: $('delay').value,
+    repetitions: $('repetitions').value,
+    cart: $('cart').checked,
+    remove: $('remove').checked,
+    cookies: $('cookies').checked,
+    screenshots: $('screenshots').checked,
+    cleanup: $('cleanup').checked,
+    captcha: $('captcha').checked
+  };
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+}
+
+function restoreFormData() {
+  try {
+    const data = JSON.parse(localStorage.getItem(STORAGE_KEY));
+    if (!data) return;
+    
+    $('site').value = data.site || '';
+    $('product').value = data.product || '';
+    $('keywords').value = data.keywords || '';
+    $('position').value = data.position || 4;
+    $('visitCount').value = data.visitCount || 1;
+    $('minScroll').value = data.minScroll || 2;
+    $('maxScroll').value = data.maxScroll || 4;
+    $('delay').value = data.delay || 'human-varied';
+    $('repetitions').value = data.repetitions || 1;
+    $('cart').checked = data.cart || false;
+    $('remove').checked = data.remove !== undefined ? data.remove : true;
+    $('cookies').checked = data.cookies !== undefined ? data.cookies : true;
+    $('screenshots').checked = data.screenshots !== undefined ? data.screenshots : true;
+    $('cleanup').checked = data.cleanup !== undefined ? data.cleanup : true;
+    $('captcha').checked = data.captcha !== undefined ? data.captcha : true;
+    
+    // Restore profiles
+    if (data.profiles && data.profiles.length) {
+      const container = $('profilesContainer');
+      container.innerHTML = '';
+      data.profiles.forEach(p => {
+        const label = document.createElement('label');
+        label.className = 'checkrow';
+        label.innerHTML = `<input type="checkbox" name="profile" value="${p.value}" ${p.checked ? 'checked' : ''}> ${p.value} <button type="button" class="danger" onclick="removeProfile(this)">Remove</button>`;
+        container.appendChild(label);
+      });
+    }
+  } catch (e) {
+    console.error('Failed to restore form data:', e);
+  }
+}
+
+function clearSavedData() {
+  if (confirm('Clear all saved form data from browser storage?')) {
+    localStorage.removeItem(STORAGE_KEY);
+    showError('Saved data cleared.');
+  }
+}
+
+// Profile management
+function addProfile() {
+  const input = $('newProfile');
+  const value = input.value.trim();
+  
+  if (!value) {
+    showError('Please enter a profile ID.');
+    return;
+  }
+  
+  if (!/^[a-zA-Z0-9_-]+$/.test(value)) {
+    showError('Profile ID should contain only letters, numbers, hyphens, and underscores.');
+    return;
+  }
+  
+  const existing = [...document.querySelectorAll('input[name=profile]')].map(x => x.value);
+  if (existing.includes(value)) {
+    showError('Profile ID already exists.');
+    return;
+  }
+  
+  const container = $('profilesContainer');
+  const label = document.createElement('label');
+  label.className = 'checkrow';
+  label.innerHTML = `<input type="checkbox" name="profile" value="${value}" checked> ${value} <button type="button" class="danger" onclick="removeProfile(this)">Remove</button>`;
+  container.appendChild(label);
+  input.value = '';
+  saveFormData();
+}
+
+function removeProfile(btn) {
+  if (confirm('Remove this profile?')) {
+    btn.closest('.checkrow').remove();
+    saveFormData();
+  }
+}
+
+// Form handling
+$('qaForm').addEventListener('submit', e => {
+  e.preventDefault();
+  
+  if (!validateForm()) return;
+  
+  const min = +$('minScroll').value;
+  const max = +$('maxScroll').value;
+  const profiles = [...document.querySelectorAll('input[name=profile]:checked')].map(x => x.value);
+  
+  $('error').style.display = 'none';
+  
+  const cfg = {
+    test_name: 'Website QA run',
+    site_url: $('site').value.trim(),
+    product_url: $('product').value.trim() || null,
+    profiles,
+    search: {
+      keywords: $('keywords').value.trim(),
+      result_position: +$('position').value
+    },
+    actions: {
+      visit_product: true,
+      scroll: {
+        enabled: max > 0,
+        min,
+        max
+      },
+      add_to_cart: $('cart').checked,
+      remove_after_test: $('remove').checked,
+      accept_cookies: $('cookies').checked
+    },
+    schedule: {
+      repetitions_per_day: +$('repetitions').value,
+      timezone: 'Europe/Amsterdam'
+    },
+    wait_profile: $('delay').value,
+    limits: {
+      stop_on_captcha: $('captcha').checked,
+      stop_on_checkout: true,
+      stop_on_payment: true
+    },
+    report: {
+      screenshots: $('screenshots').checked
+    },
+    cleanup: {
+      close_tabs: $('cleanup').checked,
+      stop_profiles: $('cleanup').checked
+    }
+  };
+  
+  $('json').textContent = JSON.stringify(cfg, null, 2);
+  $('output').style.display = 'block';
+  saveFormData();
+});
+
+// Copy with fallback
+$('copy').addEventListener('click', async () => {
+  const text = $('json').textContent;
+  try {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      await navigator.clipboard.writeText(text);
+    } else {
+      // Fallback for older browsers
+      const textarea = document.createElement('textarea');
+      textarea.value = text;
+      textarea.style.position = 'fixed';
+      textarea.style.opacity = '0';
+      document.body.appendChild(textarea);
+      textarea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textarea);
+    }
+    $('copy').textContent = 'Copied!';
+    setTimeout(() => $('copy').textContent = 'Copy JSON', 1200);
+  } catch (err) {
+    showError('Failed to copy. Please select and copy manually.');
+  }
+});
+
+// Download JSON
+$('download').addEventListener('click', () => {
+  const text = $('json').textContent;
+  const blob = new Blob([text], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'qa-test-config.json';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+});
+
+// Reset handler
+$('qaForm').addEventListener('reset', () => {
+  $('output').style.display = 'none';
+  $('error').style.display = 'none';
+  setTimeout(saveFormData, 100);
+});
+
+// Auto-save on input
+$('qaForm').addEventListener('input', saveFormData);
+$('qaForm').addEventListener('change', saveFormData);
+
+// Restore on load
+window.addEventListener('DOMContentLoaded', restoreFormData);
+</script>
+</body>
+</html>

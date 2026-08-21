@@ -1,0 +1,31 @@
+{
+  "name": "otto-qa-runner",
+  "version": "1.0.0",
+  "description": "AdsPower QA automation tool for testing product journeys on Otto.de using existing browser profiles",
+  "main": "runner/otto-runner.cjs",
+  "scripts": {
+    "runner": "node runner/otto-runner.cjs",
+    "validate": "node --check runner/otto-runner.cjs",
+    "test": "npm run validate"
+  },
+  "keywords": [
+    "adspower",
+    "qa",
+    "testing",
+    "automation",
+    "puppeteer",
+    "otto"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "puppeteer-core": "^25.8.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yourusername/otto-qa-runner.git"
+  }
+}
