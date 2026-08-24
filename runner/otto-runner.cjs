@@ -90,7 +90,7 @@ function validateConfig(config) {
     errors.push('Search keywords are required');
   }
   
-  if (!config.search.result_position || config.search.result_position < 1) {
+  if (config.search.result_position !== undefined && config.search.result_position !== null && config.search.result_position !== '' && config.search.result_position < 1) {
     errors.push('Invalid result_position');
   }
   
@@ -306,7 +306,8 @@ async function performScrolling(page, minScrolls, maxScrolls, waits) {
  * Select Nth product from search results
  */
 async function selectNthProduct(page, position, waits) {
-  console.log(`  → Looking for product at position ${position}`);
+  const requestedPosition = position || 1;
+  console.log(`  → Looking for product at position ${requestedPosition}`);
   
   const productSelectors = [
     'a[href*="/p/"]',
@@ -323,12 +324,12 @@ async function selectNthProduct(page, position, waits) {
     try {
       const links = await page.$$(selector);
       
-      if (links.length >= position) {
-        const targetLink = links[position - 1];
+      if (links.length >= requestedPosition) {
+        const targetLink = links[requestedPosition - 1];
         const href = await targetLink.evaluate(el => el.href);
         
         if (href && href.includes('/p/')) {
-          console.log(`  → Found product link at position ${position}: ${href}`);
+          console.log(`  → Found product link at position ${requestedPosition}: ${href}`);
           await targetLink.click();
           await sleep(waits.long());
           return href;
@@ -339,7 +340,7 @@ async function selectNthProduct(page, position, waits) {
     }
   }
   
-  throw new Error(`Could not find product at position ${position}`);
+  throw new Error(`Could not find product at position ${requestedPosition}`);
 }
 
 /**
@@ -639,7 +640,7 @@ async function runProfileTest(profileId, config, outputDir) {
 /**
  * Run tests concurrently with bounded worker pool
  */
-async function runConcurrentTests(profiles, config, outputDir) {
+async function runConcurrentTests(profiles, config, outputDir, onProgress = null) {
   const results = [];
   const queue = [...profiles];
   const workers = [];
@@ -652,6 +653,7 @@ async function runConcurrentTests(profiles, config, outputDir) {
       if (profileId) {
         const result = await runProfileTest(profileId, config, outputDir);
         results.push(result);
+        if (onProgress) onProgress({ profile_id: profileId, status: result.status, result });
       }
     }
   }
@@ -665,6 +667,31 @@ async function runConcurrentTests(profiles, config, outputDir) {
   await Promise.all(workers);
   
   return results;
+}
+
+async function runConfig(config, options = {}) {
+  const validationErrors = validateConfig(config);
+  if (validationErrors.length > 0) {
+    throw new Error(`Configuration validation failed: ${validationErrors.join('; ')}`);
+  }
+  const outputDir = options.outputDir || path.join(process.cwd(), 'screenshots');
+  if (config.report?.screenshots) fs.mkdirSync(outputDir, { recursive: true });
+  const startTime = Date.now();
+  const results = await runConcurrentTests(config.profiles, config, outputDir, options.onProgress);
+  return {
+    test_name: config.test_name || 'Otto QA Run',
+    started_at: new Date(startTime).toISOString(),
+    completed_at: new Date().toISOString(),
+    duration_seconds: Number(((Date.now() - startTime) / 1000).toFixed(2)),
+    config: { site_url: config.site_url, search_keywords: config.search.keywords, profiles: config.profiles },
+    summary: {
+      total: results.length,
+      completed: results.filter(r => r.status === 'completed').length,
+      failed: results.filter(r => r.status === 'failed').length,
+      stopped_captcha: results.filter(r => r.status === 'stopped_captcha').length
+    },
+    results
+  };
 }
 
 /**
@@ -720,7 +747,7 @@ async function main() {
   console.log(`Site: ${config.site_url}`);
   console.log(`Keywords: "${config.search.keywords}"`);
   console.log(`Profiles: ${config.profiles.join(', ')}`);
-  console.log(`Result position: ${config.search.result_position}`);
+  console.log(`Result position: ${config.search.result_position || 'first suitable result'}`);
   console.log(`Wait profile: ${config.wait_profile}`);
   console.log(`Add to cart: ${config.actions.add_to_cart ? 'Yes' : 'No'}`);
   console.log(`Stop on CAPTCHA: ${config.limits.stop_on_captcha ? 'Yes' : 'No'}`);
@@ -788,4 +815,4 @@ if (require.main === module) {
   });
 }
 
-module.exports = { main, validateConfig, isValidURL };
+module.exports = { main, validateConfig, isValidURL, runConfig };

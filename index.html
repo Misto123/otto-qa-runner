@@ -47,7 +47,7 @@ main{max-width:980px;margin:0 auto;padding:44px 22px 72px}.eyebrow{color:var(--a
       <div class="full"><label for="site">Site URL</label><input id="site" type="url" placeholder="https://www.otto.de" value="https://www.otto.de" required></div>
       <div class="full"><label for="product">Product URL <span class="hint">optional — use when the test should verify a specific product</span></label><input id="product" type="url" placeholder="https://www.otto.de/p/example/"></div>
       <div class="full"><label for="keywords">Search keywords</label><input id="keywords" type="text" placeholder="schuhe" required><div class="hint">Use one query per run.</div></div>
-      <div><label for="position">Result position</label><input id="position" type="number" min="1" max="100" value="4" required></div>
+      <div><label for="position">Result position <span class="hint">optional — blank uses the first suitable result</span></label><input id="position" type="number" min="1" max="100" placeholder="First suitable result"></div>
       <div><label for="visitCount">Product visits per profile</label><input id="visitCount" type="number" min="1" max="10" value="1" required></div>
     </div></section>
     <section class="panel"><h2>Existing AdsPower profiles</h2>
@@ -78,7 +78,8 @@ main{max-width:980px;margin:0 auto;padding:44px 22px 72px}.eyebrow{color:var(--a
     </div>
     <div class="notice">Safety defaults: no checkout, payment, account changes, or CAPTCHA solving. The runner stops immediately on security challenges and always cleans up profiles in the finally block.</div></section>
     <div class="actions">
-      <button class="primary" type="submit">Generate test configuration</button>
+      <button class="primary" type="submit">Prepare test configuration</button>
+      <button id="runTest" class="secondary" type="button">Run this test locally</button>
       <button class="secondary" type="reset">Reset</button>
       <button class="secondary" type="button" onclick="clearSavedData()">Clear Saved Data</button>
     </div>
@@ -91,6 +92,11 @@ main{max-width:980px;margin:0 auto;padding:44px 22px 72px}.eyebrow{color:var(--a
       <button id="copy" class="secondary" type="button">Copy JSON</button>
       <button id="download" class="secondary" type="button">Download JSON</button>
     </div>
+  </section>
+  <section id="runOutput" class="output panel" aria-live="polite">
+    <h2>Local run status</h2>
+    <p id="runStatus">The local companion must be running on your Mac.</p>
+    <pre id="runJson"></pre>
   </section>
 </main>
 </div>
@@ -208,7 +214,7 @@ function restoreFormData() {
     $('site').value = data.site || '';
     $('product').value = data.product || '';
     $('keywords').value = data.keywords || '';
-    $('position').value = data.position || 4;
+    $('position').value = data.position || '';
     $('visitCount').value = data.visitCount || 1;
     $('minScroll').value = data.minScroll || 2;
     $('maxScroll').value = data.maxScroll || 4;
@@ -300,7 +306,7 @@ $('qaForm').addEventListener('submit', e => {
     profiles,
     search: {
       keywords: $('keywords').value.trim(),
-      result_position: +$('position').value
+      ...($('position').value.trim() ? { result_position: +$('position').value } : {})
     },
     actions: {
       visit_product: true,
@@ -336,6 +342,25 @@ $('qaForm').addEventListener('submit', e => {
   $('output').style.display = 'block';
   saveFormData();
 });
+
+async function runLocalTest() {
+  if (!validateForm()) return;
+  const config = {
+    site_url: $('site').value.trim(), product_url: $('product').value.trim() || null,
+    profiles: [...document.querySelectorAll('input[name=profile]:checked')].map(x => x.value),
+    search: { keywords: $('keywords').value.trim(), ...($('position').value.trim() ? {result_position:+$('position').value} : {}) },
+    actions: {visit_product:true, scroll:{enabled:+$('maxScroll').value>0,min:+$('minScroll').value,max:+$('maxScroll').value}, add_to_cart:$('cart').checked, remove_after_test:$('remove').checked, accept_cookies:$('cookies').checked},
+    wait_profile:$('delay').value, limits:{stop_on_captcha:$('captcha').checked, stop_on_checkout:true, stop_on_payment:true}, report:{screenshots:$('screenshots').checked}, cleanup:{close_tabs:$('cleanup').checked, stop_profiles:$('cleanup').checked}
+  };
+  $('runOutput').style.display='block'; $('runStatus').textContent='Connecting to local companion…';
+  try {
+    const response=await fetch('http://127.0.0.1:8787/run',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(config)});
+    const data=await response.json(); if(!response.ok) throw new Error(data.error||'Run rejected');
+    $('runStatus').textContent=`Run started: ${data.run_id}`;
+    const poll=async()=>{const state=await (await fetch(`http://127.0.0.1:8787/runs/${encodeURIComponent(data.run_id)}`)).json();$('runJson').textContent=JSON.stringify(state,null,2);if(state.status==='running')setTimeout(poll,1500);else $('runStatus').textContent=`Run ${state.status}.`}; poll();
+  } catch(error) { $('runStatus').textContent=`Could not connect to local companion: ${error.message}`; }
+}
+$('runTest').addEventListener('click',runLocalTest);
 
 // Copy with fallback
 $('copy').addEventListener('click', async () => {

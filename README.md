@@ -73,6 +73,18 @@ npm install
 npm run validate
 ```
 
+## Local companion: Run this test locally
+
+The deployed page can send a validated configuration to a companion running on the same Mac. It cannot run AdsPower from Vercel directly.
+
+```bash
+npm install
+npm run companion
+# keep this process running, then use Run this test locally on the web page
+```
+
+The companion listens only on `127.0.0.1:8787`, accepts requests only from the deployed page or localhost, and never accepts credentials. It runs existing AdsPower profiles through CDP, stops on challenges, and cleans up profiles in the runner's `finally` path.
+
 ## Usage
 
 ### Step 1: Generate Configuration

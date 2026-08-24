@@ -5,8 +5,10 @@
   "main": "runner/otto-runner.cjs",
   "scripts": {
     "runner": "node runner/otto-runner.cjs",
-    "validate": "node --check runner/otto-runner.cjs",
-    "test": "npm run validate"
+    "companion": "node companion/server.cjs",
+    "validate": "node --check runner/otto-runner.cjs && node --check companion/server.cjs",
+    "validate:all": "npm run validate && node --check companion/server.cjs && node --check tests/optional-position.cjs",
+    "test": "npm run validate && node tests/optional-position.cjs"
   },
   "keywords": [
     "adspower",
