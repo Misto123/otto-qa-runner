@@ -45,20 +45,20 @@ main{max-width:980px;margin:0 auto;padding:44px 22px 72px}.eyebrow{color:var(--a
   <form id="qaForm">
     <section class="panel"><h2>Target</h2><div class="grid">
       <div class="full"><label for="site">Site URL</label><input id="site" type="url" placeholder="https://www.otto.de" value="https://www.otto.de" required></div>
-      <div class="full"><label for="product">Product URL <span class="hint">optional — use when the test should verify a specific product</span></label><input id="product" type="url" placeholder="https://www.otto.de/p/example/"></div>
-      <div class="full"><label for="keywords">Search keywords</label><input id="keywords" type="text" placeholder="schuhe" required><div class="hint">Use one query per run.</div></div>
+      <div class="full"><label for="product">Product URL <span class="hint">optional — use when the test should verify a specific product</span></label><input id="product" type="url" value="https://www.otto.de/p/goldstoff-ecksofa-mit-schlaffunktion-cord-couch-fuer-wohnzimmer-cord-ecksofa-cord-sofa-voyage-2-teile-grosser-bettkasten-S03EF02H/?variationId=S03EF02HP43N" placeholder="https://www.otto.de/p/example/"></div>
+      <div class="full"><label for="keywords">Search keywords</label><input id="keywords" type="text" value="cord ecksofa" placeholder="schuhe"><div class="hint">Use one query per run. If Product URL is supplied, the runner visits it directly.</div></div>
       <div><label for="position">Result position <span class="hint">optional — blank uses the first suitable result</span></label><input id="position" type="number" min="1" max="100" placeholder="First suitable result"></div>
       <div><label for="visitCount">Product visits per profile</label><input id="visitCount" type="number" min="1" max="10" value="1" required></div>
     </div></section>
     <section class="panel"><h2>Existing AdsPower profiles</h2>
       <div id="profilesContainer" class="profiles">
-        <label class="checkrow"><input type="checkbox" name="profile" value="k1fgmwtq" checked> k1fgmwtq <button type="button" class="danger" onclick="removeProfile(this)">Remove</button></label>
-        <label class="checkrow"><input type="checkbox" name="profile" value="k1f39ocj" checked> k1f39ocj <button type="button" class="danger" onclick="removeProfile(this)">Remove</button></label>
-        <label class="checkrow"><input type="checkbox" name="profile" value="k1e3u6vd" checked> k1e3u6vd <button type="button" class="danger" onclick="removeProfile(this)">Remove</button></label>
+        <label class="checkrow"><input type="checkbox" name="profile" value="k1fgmwtq" checked> k1fgmwtq</label>
+        <label class="checkrow"><input type="checkbox" name="profile" value="k1f39ocj" checked> k1f39ocj</label>
+        <label class="checkrow"><input type="checkbox" name="profile" value="k1e3u6vd" checked> k1e3u6vd</label>
       </div>
       <div class="profile-add">
-        <input id="newProfile" type="text" placeholder="Enter profile ID (e.g., k1abc123)" pattern="[a-zA-Z0-9_-]+" title="Profile ID should contain only letters, numbers, hyphens, and underscores">
-        <button type="button" class="secondary" onclick="addProfile()">Add Profile</button>
+        <input id="newProfile" type="hidden">
+        <button type="button" class="secondary" onclick="addProfile()" hidden>Add Profile</button>
       </div>
       <div class="hint">Add or replace IDs with existing profiles only. The runner uses existing profiles and never creates or deletes them. Profile IDs can be found in your AdsPower application.</div>
     </section>
@@ -78,10 +78,10 @@ main{max-width:980px;margin:0 auto;padding:44px 22px 72px}.eyebrow{color:var(--a
     </div>
     <div class="notice">Safety defaults: no checkout, payment, account changes, or CAPTCHA solving. The runner stops immediately on security challenges and always cleans up profiles in the finally block.</div></section>
     <div class="actions">
-      <button class="primary" type="submit">Prepare test configuration</button>
+      <button class="primary" type="submit" hidden>Prepare test configuration</button>
       <button id="runTest" class="secondary" type="button">Run this test locally</button>
-      <button class="secondary" type="reset">Reset</button>
-      <button class="secondary" type="button" onclick="clearSavedData()">Clear Saved Data</button>
+      <button class="secondary" type="reset" hidden>Reset</button>
+      <button class="secondary" type="button" onclick="clearSavedData()" hidden>Clear Saved Data</button>
     </div>
     <div id="error" class="error"></div>
   </form>
@@ -89,14 +89,15 @@ main{max-width:980px;margin:0 auto;padding:44px 22px 72px}.eyebrow{color:var(--a
     <h2>Generated configuration</h2>
     <pre id="json"></pre>
     <div class="actions">
-      <button id="copy" class="secondary" type="button">Copy JSON</button>
-      <button id="download" class="secondary" type="button">Download JSON</button>
+      <button id="copy" class="secondary" type="button" hidden>Copy JSON</button>
+      <button id="download" class="secondary" type="button" hidden>Download JSON</button>
     </div>
   </section>
   <section id="runOutput" class="output panel" aria-live="polite">
     <h2>Local run status</h2>
     <p id="runStatus">The local companion must be running on your Mac.</p>
     <pre id="runJson"></pre>
+    <h3>Run log</h3><pre id="runLog"></pre>
   </section>
 </main>
 </div>
@@ -169,8 +170,8 @@ function validateForm() {
     showError('Product URL is invalid.');
     return false;
   }
-  if (!$('keywords').value.trim()) {
-    showError('Search keywords are required.');
+  if (!$('product').value.trim() && !$('keywords').value.trim()) {
+    showError('Provide a product URL or search keywords.');
     return false;
   }
   
@@ -234,7 +235,7 @@ function restoreFormData() {
       data.profiles.forEach(p => {
         const label = document.createElement('label');
         label.className = 'checkrow';
-        label.innerHTML = `<input type="checkbox" name="profile" value="${p.value}" ${p.checked ? 'checked' : ''}> ${p.value} <button type="button" class="danger" onclick="removeProfile(this)">Remove</button>`;
+        label.innerHTML = `<input type="checkbox" name="profile" value="${p.value}" ${p.checked ? 'checked' : ''}> ${p.value}`;
         container.appendChild(label);
       });
     }
@@ -274,7 +275,7 @@ function addProfile() {
   const container = $('profilesContainer');
   const label = document.createElement('label');
   label.className = 'checkrow';
-  label.innerHTML = `<input type="checkbox" name="profile" value="${value}" checked> ${value} <button type="button" class="danger" onclick="removeProfile(this)">Remove</button>`;
+  label.innerHTML = `<input type="checkbox" name="profile" value="${value}" checked> ${value}`;
   container.appendChild(label);
   input.value = '';
   saveFormData();
@@ -357,7 +358,7 @@ async function runLocalTest() {
     const response=await fetch('http://127.0.0.1:8787/run',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(config)});
     const data=await response.json(); if(!response.ok) throw new Error(data.error||'Run rejected');
     $('runStatus').textContent=`Run started: ${data.run_id}`;
-    const poll=async()=>{const state=await (await fetch(`http://127.0.0.1:8787/runs/${encodeURIComponent(data.run_id)}`)).json();$('runJson').textContent=JSON.stringify(state,null,2);if(state.status==='running')setTimeout(poll,1500);else $('runStatus').textContent=`Run ${state.status}.`}; poll();
+    const poll=async()=>{const state=await (await fetch(`http://127.0.0.1:8787/runs/${encodeURIComponent(data.run_id)}`)).json();$('runJson').textContent=JSON.stringify(state.report||state,null,2);$('runLog').textContent=(state.log||[]).join('\n');if(state.status==='running')setTimeout(poll,1500);else $('runStatus').textContent=`Run ${state.status}.`;}; poll();
   } catch(error) { $('runStatus').textContent=`Could not connect to local companion: ${error.message}`; }
 }
 $('runTest').addEventListener('click',runLocalTest);

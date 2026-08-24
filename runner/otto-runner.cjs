@@ -86,11 +86,11 @@ function validateConfig(config) {
     errors.push('No profiles specified');
   }
   
-  if (!config.search || !config.search.keywords) {
-    errors.push('Search keywords are required');
+  if (!config.search || (config.search.keywords === undefined && !config.product_url)) {
+    errors.push('Search keywords are required when product_url is not supplied');
   }
   
-  if (config.search.result_position !== undefined && config.search.result_position !== null && config.search.result_position !== '' && config.search.result_position < 1) {
+  if (config.search?.result_position !== undefined && config.search.result_position !== null && config.search.result_position !== '' && config.search.result_position < 1) {
     errors.push('Invalid result_position');
   }
   
@@ -494,8 +494,9 @@ async function runProfileTest(profileId, config, outputDir) {
       defaultViewport: null
     });
     
-    const pages = await browser.pages();
-    page = pages.length > 0 ? pages[0] : await browser.newPage();
+    // Always use a fresh tab. Existing profile tabs may be private project
+    // pages or stale login/session pages and must never be repurposed.
+    page = await browser.newPage();
     
     page.setDefaultTimeout(DEFAULT_TIMEOUT);
     result.steps.push({ step: 'browser_connected', timestamp: new Date().toISOString() });
@@ -528,9 +529,15 @@ async function runProfileTest(profileId, config, outputDir) {
       result.steps.push({ step: 'cookies_accepted', timestamp: new Date().toISOString() });
     }
     
-    // Search keywords
-    await searchKeywords(page, config.search.keywords, waits);
-    result.steps.push({ step: 'search_completed', timestamp: new Date().toISOString() });
+    // Search keywords, unless a direct product URL was supplied.
+    if (config.product_url) {
+      await page.goto(config.product_url, { waitUntil: 'domcontentloaded' });
+      await sleep(waits.medium());
+      result.steps.push({ step: 'product_direct_loaded', timestamp: new Date().toISOString(), url: config.product_url });
+    } else {
+      await searchKeywords(page, config.search.keywords, waits);
+      result.steps.push({ step: 'search_completed', timestamp: new Date().toISOString() });
+    }
     
     if (config.report.screenshots) {
       const screenshot = await takeScreenshot(page, profileId, 'search_results', outputDir);
@@ -548,8 +555,8 @@ async function runProfileTest(profileId, config, outputDir) {
       result.steps.push({ step: 'scrolling_completed', timestamp: new Date().toISOString() });
     }
     
-    // Select Nth product
-    const productUrl = await selectNthProduct(page, config.search.result_position, waits);
+    // Select Nth product when searching; otherwise use the supplied URL.
+    const productUrl = config.product_url || await selectNthProduct(page, config.search.result_position, waits);
     result.product_url = productUrl;
     result.steps.push({ step: 'product_selected', timestamp: new Date().toISOString(), url: productUrl });
     
