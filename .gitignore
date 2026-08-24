@@ -3,4 +3,6 @@ node_modules/
 *.log
 report-*.json
 results/
+reports/
+screenshots/
 .DS_Store

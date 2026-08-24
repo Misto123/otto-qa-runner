@@ -1,0 +1,15 @@
+{
+  "test_name": "Otto QA Run",
+  "started_at": "2026-08-24T08:49:53.388Z",
+  "completed_at": "2026-08-24T08:50:36.308Z",
+  "duration_seconds": 42.92,
+  "summary": {"total": 1, "completed": 1, "failed": 0, "stopped_captcha": 0},
+  "results": [{
+    "profile_id": "k1fgmwtq",
+    "status": "completed",
+    "product_url": "https://www.otto.de/p/goldstoff-ecksofa-mit-schlaffunktion-cord-couch-fuer-wohnzimmer-cord-ecksofa-cord-sofa-voyage-2-teile-grosser-bettkasten-S03EF02H/?variationId=S03EF02HP43N",
+    "steps": ["profile_started", "browser_connected", "site_loaded", "cookies_accepted", "product_direct_loaded", "scrolling_completed", "product_selected"],
+    "error": null
+  }]
+}
+
