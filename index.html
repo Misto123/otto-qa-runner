@@ -68,15 +68,15 @@ main{max-width:980px;margin:0 auto;padding:44px 22px 72px}.eyebrow{color:var(--a
       <div><label for="delay">Wait profile</label><select id="delay"><option value="human-varied">Human-like varied waits</option><option value="standard">Standard waits</option></select></div>
       <div><label for="repetitions">QA repetitions per day</label><input id="repetitions" type="number" min="1" max="10" value="1" required></div>
       <div class="full switches">
-        <label><input id="cart" type="checkbox"> Add to cart for QA</label>
+        <label><input id="cart" type="checkbox" checked> Add to cart for QA</label>
         <label><input id="remove" type="checkbox" checked> Remove test item afterward</label>
         <label><input id="cookies" type="checkbox" checked> Accept cookie dialogs</label>
         <label><input id="screenshots" type="checkbox" checked> Save screenshots</label>
         <label><input id="cleanup" type="checkbox" checked> Close tabs and stop profiles</label>
-        <label><input id="captcha" type="checkbox" checked> Stop on CAPTCHA/challenge</label>
+        <label><input id="captcha" type="checkbox"> Stop on CAPTCHA/challenge</label>
       </div>
     </div>
-    <div class="notice">Safety defaults: no checkout, payment, account changes, or CAPTCHA solving. The runner stops immediately on security challenges and always cleans up profiles in the finally block.</div></section>
+    <div class="notice">Safety defaults: no checkout, payment, account changes, or CAPTCHA solving. CAPTCHA stopping is configurable, and profiles are always cleaned up in the finally block when enabled.</div></section>
     <div class="actions">
       <button class="primary" type="submit" hidden>Prepare test configuration</button>
       <button id="runTest" class="secondary" type="button">Run this test locally</button>
@@ -221,12 +221,12 @@ function restoreFormData() {
     $('maxScroll').value = data.maxScroll || 4;
     $('delay').value = data.delay || 'human-varied';
     $('repetitions').value = data.repetitions || 1;
-    $('cart').checked = data.cart || false;
+    $('cart').checked = data.cart !== undefined ? data.cart : true;
     $('remove').checked = data.remove !== undefined ? data.remove : true;
     $('cookies').checked = data.cookies !== undefined ? data.cookies : true;
     $('screenshots').checked = data.screenshots !== undefined ? data.screenshots : true;
     $('cleanup').checked = data.cleanup !== undefined ? data.cleanup : true;
-    $('captcha').checked = data.captcha !== undefined ? data.captcha : true;
+    $('captcha').checked = data.captcha !== undefined ? data.captcha : false;
     
     // Restore profiles
     if (data.profiles && data.profiles.length) {

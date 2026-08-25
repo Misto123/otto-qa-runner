@@ -18,7 +18,7 @@
       "min": 2,
       "max": 4
     },
-    "add_to_cart": false,
+    "add_to_cart": true,
     "remove_after_test": true,
     "accept_cookies": true
   },
@@ -28,7 +28,7 @@
   },
   "wait_profile": "human-varied",
   "limits": {
-    "stop_on_captcha": true,
+    "stop_on_captcha": false,
     "stop_on_checkout": true,
     "stop_on_payment": true
   },
