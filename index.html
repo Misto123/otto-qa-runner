@@ -77,22 +77,20 @@ main{max-width:980px;margin:0 auto;padding:44px 22px 72px}.eyebrow{color:var(--a
       </div>
     </div>
     <div class="notice">Safety defaults: no checkout, payment, account changes, or CAPTCHA solving. CAPTCHA stopping is configurable, and profiles are always cleaned up in the finally block when enabled.</div></section>
+    <section class="panel"><h2>Companion Connection</h2>
+      <div class="grid">
+        <div class="full">
+          <label for="companionUrl">Companion Server URL</label>
+          <input id="companionUrl" type="url" value="http://127.0.0.1:8787" placeholder="http://192.168.1.100:8787">
+          <div class="hint">For remote devices, use your Mac's local IP address (e.g., http://192.168.1.100:8787). The companion server shows the IP when it starts.</div>
+        </div>
+      </div>
+    </section>
     <div class="actions">
-      <button class="primary" type="submit" hidden>Prepare test configuration</button>
-      <button id="runTest" class="secondary" type="button">Run this test locally</button>
-      <button class="secondary" type="reset" hidden>Reset</button>
-      <button class="secondary" type="button" onclick="clearSavedData()" hidden>Clear Saved Data</button>
+      <button id="runTest" class="primary" type="button">▶ Run via AdsPower</button>
     </div>
     <div id="error" class="error"></div>
   </form>
-  <section id="output" class="output panel">
-    <h2>Generated configuration</h2>
-    <pre id="json"></pre>
-    <div class="actions">
-      <button id="copy" class="secondary" type="button" hidden>Copy JSON</button>
-      <button id="download" class="secondary" type="button" hidden>Download JSON</button>
-    </div>
-  </section>
   <section id="runOutput" class="output panel" aria-live="polite">
     <h2>Local run status</h2>
     <p id="runStatus">The local companion must be running on your Mac.</p>
@@ -210,7 +208,8 @@ function saveFormData() {
     cookies: $('cookies').checked,
     screenshots: $('screenshots').checked,
     cleanup: $('cleanup').checked,
-    captcha: $('captcha').checked
+    captcha: $('captcha').checked,
+    companionUrl: $('companionUrl').value.trim()
   };
   localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
 }
@@ -235,6 +234,7 @@ function restoreFormData() {
     $('screenshots').checked = data.screenshots !== undefined ? data.screenshots : true;
     $('cleanup').checked = data.cleanup !== undefined ? data.cleanup : true;
     $('captcha').checked = data.captcha !== undefined ? data.captcha : false;
+    $('companionUrl').value = data.companionUrl || 'http://127.0.0.1:8787';
     
     // Restore profiles
     if (data.profiles && data.profiles.length) {
@@ -354,6 +354,7 @@ $('qaForm').addEventListener('submit', e => {
 
 async function runLocalTest() {
   if (!validateForm()) return;
+  const companionUrl = $('companionUrl').value.trim() || 'http://127.0.0.1:8787';
   const config = {
     site_url: $('site').value.trim(), product_url: $('product').value.trim() || null,
     profiles: [...document.querySelectorAll('input[name=profile]:checked')].map(x => x.value),
@@ -361,68 +362,23 @@ async function runLocalTest() {
     actions: {visit_product:true, scroll:{enabled:+$('maxScroll').value>0,min:+$('minScroll').value,max:+$('maxScroll').value}, add_to_cart:$('cart').checked, remove_after_test:$('remove').checked, accept_cookies:$('cookies').checked},
     wait_profile:$('delay').value, limits:{stop_on_captcha:$('captcha').checked, stop_on_checkout:true, stop_on_payment:true}, report:{screenshots:$('screenshots').checked}, cleanup:{close_tabs:$('cleanup').checked, stop_profiles:$('cleanup').checked}
   };
-  $('runOutput').style.display='block'; $('runStatus').textContent='Connecting to local companion…'; $('mixedContentWarning').style.display='none';
+  $('runOutput').style.display='block'; $('runStatus').textContent=`Connecting to ${companionUrl}...`; $('mixedContentWarning').style.display='none';
   try {
-    const response=await fetch('http://127.0.0.1:8787/run',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(config)});
+    const response=await fetch(`${companionUrl}/run`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(config)});
     const data=await response.json(); if(!response.ok) throw new Error(data.error||'Run rejected');
     $('runStatus').textContent=`Run started: ${data.run_id}`;
-    const poll=async()=>{const state=await (await fetch(`http://127.0.0.1:8787/runs/${encodeURIComponent(data.run_id)}`)).json();$('runJson').textContent=JSON.stringify(state.report||state,null,2);$('runLog').textContent=(state.log||[]).join('\n');if(state.status==='running')setTimeout(poll,1500);else $('runStatus').textContent=`Run ${state.status}.`;}; poll();
+    const poll=async()=>{const state=await (await fetch(`${companionUrl}/runs/${encodeURIComponent(data.run_id)}`)).json();$('runJson').textContent=JSON.stringify(state.report||state,null,2);$('runLog').textContent=(state.log||[]).join('\n');if(state.status==='running')setTimeout(poll,1500);else $('runStatus').textContent=`Run ${state.status}.`;}; poll();
   } catch(error) {
     const isMixedContent = window.location.protocol === 'https:' && (error.message.includes('Failed to fetch') || error.message.includes('NetworkError'));
     if (isMixedContent) {
       $('runStatus').textContent='Connection blocked by browser security';
       $('mixedContentWarning').style.display='block';
     } else {
-      $('runStatus').textContent=`Could not connect to local companion: ${error.message}`;
+      $('runStatus').textContent=`Could not connect: ${error.message}`;
     }
   }
 }
 $('runTest').addEventListener('click',runLocalTest);
-
-// Copy with fallback
-$('copy').addEventListener('click', async () => {
-  const text = $('json').textContent;
-  try {
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-      await navigator.clipboard.writeText(text);
-    } else {
-      // Fallback for older browsers
-      const textarea = document.createElement('textarea');
-      textarea.value = text;
-      textarea.style.position = 'fixed';
-      textarea.style.opacity = '0';
-      document.body.appendChild(textarea);
-      textarea.select();
-      document.execCommand('copy');
-      document.body.removeChild(textarea);
-    }
-    $('copy').textContent = 'Copied!';
-    setTimeout(() => $('copy').textContent = 'Copy JSON', 1200);
-  } catch (err) {
-    showError('Failed to copy. Please select and copy manually.');
-  }
-});
-
-// Download JSON
-$('download').addEventListener('click', () => {
-  const text = $('json').textContent;
-  const blob = new Blob([text], { type: 'application/json' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = 'qa-test-config.json';
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
-});
-
-// Reset handler
-$('qaForm').addEventListener('reset', () => {
-  $('output').style.display = 'none';
-  $('error').style.display = 'none';
-  setTimeout(saveFormData, 100);
-});
 
 // Auto-save on input
 $('qaForm').addEventListener('input', saveFormData);
