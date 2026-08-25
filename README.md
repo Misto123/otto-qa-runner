@@ -84,12 +84,12 @@ npm run companion
 ```
 
 The companion listens only on `127.0.0.1:8787`, accepts requests only from the deployed page or localhost, and never accepts credentials. It runs existing AdsPower profiles through CDP, stops on challenges, and cleans up profiles in the runner's `finally` path.
-
 ## Usage
 
 ### Step 1: Generate Configuration
 
-**Option A: Use the deployed web page** (recommended)
+**Option A: Use the deployed web page** (recommended for config generation)
+
 1. Visit the deployed Vercel page
 2. Fill in your test parameters:
    - Site URL (e.g., `https://www.otto.de`)
@@ -99,14 +99,22 @@ The companion listens only on `127.0.0.1:8787`, accepts requests only from the d
 3. Click "Generate test configuration"
 4. Download the JSON file
 
-**Option B: Use the local HTML file**
+**Option B: Run locally with live testing** (avoids mixed content issues)
+
 ```bash
-# Open index.html in your browser
-open index.html
+# Start both the configurator and companion
+npm run dev
+
+# Or start them separately in two terminals:
+npm run serve      # Configurator at http://localhost:3000
+npm run companion  # Companion API at http://127.0.0.1:8787
 ```
 
-### Step 2: Run Tests Locally
+Then open http://localhost:3001 and click "Run this test locally" to execute tests directly through AdsPower.
 
+**Why local HTTP?** Browsers block HTTPS pages (like Vercel) from connecting to local HTTP servers (mixed content security). Running the configurator locally on HTTP avoids this limitation.
+
+### Step 2: Run Tests Locally
 ```bash
 # Run with your configuration file
 npm run runner sample-config.json

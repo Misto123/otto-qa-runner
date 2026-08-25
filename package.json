@@ -6,6 +6,8 @@
   "scripts": {
     "runner": "node runner/otto-runner.cjs",
     "companion": "node companion/server.cjs",
+    "serve": "node scripts/serve-local.cjs",
+    "dev": "concurrently \"npm run serve\" \"npm run companion\"",
     "validate": "node --check runner/otto-runner.cjs && node --check companion/server.cjs",
     "validate:all": "npm run validate && node --check companion/server.cjs && node --check tests/optional-position.cjs",
     "test": "npm run validate && node tests/optional-position.cjs"

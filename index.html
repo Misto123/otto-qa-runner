@@ -96,6 +96,14 @@ main{max-width:980px;margin:0 auto;padding:44px 22px 72px}.eyebrow{color:var(--a
   <section id="runOutput" class="output panel" aria-live="polite">
     <h2>Local run status</h2>
     <p id="runStatus">The local companion must be running on your Mac.</p>
+    <div id="mixedContentWarning" class="notice" style="display:none;background:#3d1a1a;border-color:var(--danger)">
+      <strong>⚠️ Browser Security Blocking Connection</strong><br>
+      Your browser blocks HTTPS sites from connecting to local HTTP servers (Mixed Content).<br><br>
+      <strong>Solution:</strong> Open this page using the local file instead:<br>
+      1. Run: <code style="background:var(--panel2);padding:2px 6px;border-radius:4px">npm run companion</code><br>
+      2. Open: <code style="background:var(--panel2);padding:2px 6px;border-radius:4px">open index.html</code> (or visit via http://localhost)<br>
+      3. Click "Run this test locally" again
+    </div>
     <pre id="runJson"></pre>
     <h3>Run log</h3><pre id="runLog"></pre>
   </section>
@@ -353,13 +361,21 @@ async function runLocalTest() {
     actions: {visit_product:true, scroll:{enabled:+$('maxScroll').value>0,min:+$('minScroll').value,max:+$('maxScroll').value}, add_to_cart:$('cart').checked, remove_after_test:$('remove').checked, accept_cookies:$('cookies').checked},
     wait_profile:$('delay').value, limits:{stop_on_captcha:$('captcha').checked, stop_on_checkout:true, stop_on_payment:true}, report:{screenshots:$('screenshots').checked}, cleanup:{close_tabs:$('cleanup').checked, stop_profiles:$('cleanup').checked}
   };
-  $('runOutput').style.display='block'; $('runStatus').textContent='Connecting to local companion…';
+  $('runOutput').style.display='block'; $('runStatus').textContent='Connecting to local companion…'; $('mixedContentWarning').style.display='none';
   try {
     const response=await fetch('http://127.0.0.1:8787/run',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(config)});
     const data=await response.json(); if(!response.ok) throw new Error(data.error||'Run rejected');
     $('runStatus').textContent=`Run started: ${data.run_id}`;
     const poll=async()=>{const state=await (await fetch(`http://127.0.0.1:8787/runs/${encodeURIComponent(data.run_id)}`)).json();$('runJson').textContent=JSON.stringify(state.report||state,null,2);$('runLog').textContent=(state.log||[]).join('\n');if(state.status==='running')setTimeout(poll,1500);else $('runStatus').textContent=`Run ${state.status}.`;}; poll();
-  } catch(error) { $('runStatus').textContent=`Could not connect to local companion: ${error.message}`; }
+  } catch(error) {
+    const isMixedContent = window.location.protocol === 'https:' && (error.message.includes('Failed to fetch') || error.message.includes('NetworkError'));
+    if (isMixedContent) {
+      $('runStatus').textContent='Connection blocked by browser security';
+      $('mixedContentWarning').style.display='block';
+    } else {
+      $('runStatus').textContent=`Could not connect to local companion: ${error.message}`;
+    }
+  }
 }
 $('runTest').addEventListener('click',runLocalTest);
 
