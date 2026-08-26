@@ -86,9 +86,9 @@ main{max-width:980px;margin:0 auto;padding:44px 22px 72px}.eyebrow{color:var(--a
         </div>
       </div>
       <div id="connectionStatus" class="notice" style="display:none;margin-top:1rem"></div>
+      <div id="connectionHelp" style="margin-top:1rem;display:none"></div>
       <div style="margin-top:1rem">
         <button id="testConnection" class="secondary" type="button">🔌 Test Connection</button>
-        <span id="connectionHelp" style="margin-left:1rem;color:var(--text-dim);font-size:0.9rem"></span>
       </div>
     </section>
     <div class="actions">
@@ -367,7 +367,8 @@ async function testConnection() {
   $('testConnection').disabled = true;
   $('testConnection').textContent = '🔄 Testing...';
   $('connectionStatus').style.display = 'none';
-  $('connectionHelp').textContent = '';
+  $('connectionHelp').style.display = 'none';
+  $('connectionHelp').innerHTML = '';
   
   try {
     const response = await fetch(`${companionUrl}/health`, {
@@ -382,8 +383,8 @@ async function testConnection() {
       showConnectionStatus('success', `✅ Connected! Companion is ready${data.https ? ' (HTTPS)' : ''}`);
       $('runTest').disabled = false;
       $('runTest').title = '';
-      $('connectionHelp').textContent = 'Ready to run tests';
-      $('connectionHelp').style.color = 'var(--good)';
+      $('connectionHelp').style.display = 'block';
+      $('connectionHelp').innerHTML = '<span style="color:var(--good);font-weight:bold">✓ Ready to run tests</span>';
     } else {
       throw new Error('Invalid response from companion');
     }
@@ -393,12 +394,14 @@ async function testConnection() {
     
     if (isHttps && isCertError) {
       showConnectionStatus('warning', 
-        `⚠️ Certificate not accepted yet. Click the button below to accept it, then test again.`
+        `⚠️ Certificate not accepted yet`
       );
-      $('connectionHelp').innerHTML = `<a href="${companionUrl}" target="_blank" style="color:var(--accent);text-decoration:underline">Open ${companionUrl} in new tab</a>`;
+      $('connectionHelp').style.display = 'block';
+      $('connectionHelp').innerHTML = `<a href="${companionUrl}" target="_blank" style="display:inline-block;background:var(--accent);color:var(--bg);padding:0.75rem 1.5rem;border-radius:8px;text-decoration:none;font-weight:bold;font-size:1rem;margin:0.5rem 0">👉 Click here to accept certificate</a><br><span style="font-size:0.9rem;color:var(--text-dim)">A new tab will open. Accept the security warning, then come back and click Test Connection again.</span>`;
     } else {
       showConnectionStatus('error', `❌ Cannot connect: ${error.message || 'Connection failed'}`);
-      $('connectionHelp').textContent = 'Make sure companion is running';
+      $('connectionHelp').style.display = 'block';
+      $('connectionHelp').innerHTML = '<span style="color:var(--text-dim)">Make sure companion is running on your Mac</span>';
     }
     
     $('runTest').disabled = true;
@@ -436,8 +439,8 @@ $('companionUrl').addEventListener('change', () => {
   $('runTest').disabled = true;
   $('runTest').title = 'Test connection first';
   $('connectionStatus').style.display = 'none';
-  $('connectionHelp').textContent = 'Click "Test Connection" to verify';
-  $('connectionHelp').style.color = 'var(--muted)';
+  $('connectionHelp').style.display = 'block';
+  $('connectionHelp').innerHTML = '<span style="color:var(--text-dim)">Click "Test Connection" to verify</span>';
 });
 
 async function runLocalTest() {
