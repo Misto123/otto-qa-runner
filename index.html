@@ -81,8 +81,8 @@ main{max-width:980px;margin:0 auto;padding:44px 22px 72px}.eyebrow{color:var(--a
       <div class="grid">
         <div class="full">
           <label for="companionUrl">Companion Server URL</label>
-          <input id="companionUrl" type="url" value="http://127.0.0.1:8787" placeholder="http://192.168.1.100:8787">
-          <div class="hint">For remote devices, use your Mac's local IP address (e.g., http://192.168.1.100:8787). The companion server shows the IP when it starts.</div>
+          <input id="companionUrl" type="url" value="https://192.168.1.100:8787" placeholder="https://192.168.1.100:8787">
+          <div class="hint">Use HTTPS with your Mac's local IP address (e.g., https://192.168.1.100:8787). The companion server shows available IPs when it starts. First time: open the URL in a new tab to accept the certificate.</div>
         </div>
       </div>
     </section>
@@ -95,12 +95,13 @@ main{max-width:980px;margin:0 auto;padding:44px 22px 72px}.eyebrow{color:var(--a
     <h2>Local run status</h2>
     <p id="runStatus">The local companion must be running on your Mac.</p>
     <div id="mixedContentWarning" class="notice" style="display:none;background:#3d1a1a;border-color:var(--danger)">
-      <strong>⚠️ Browser Security Blocking Connection</strong><br>
-      Your browser blocks HTTPS sites from connecting to local HTTP servers (Mixed Content).<br><br>
-      <strong>Solution:</strong> Open this page using the local file instead:<br>
-      1. Run: <code style="background:var(--panel2);padding:2px 6px;border-radius:4px">npm run companion</code><br>
-      2. Open: <code style="background:var(--panel2);padding:2px 6px;border-radius:4px">open index.html</code> (or visit via http://localhost)<br>
-      3. Click "Run this test locally" again
+      <strong>⚠️ Connection Failed</strong><br>
+      Make sure the companion is running with HTTPS and you've accepted the certificate.<br><br>
+      <strong>Steps:</strong><br>
+      1. Start companion: <code style="background:var(--panel2);padding:2px 6px;border-radius:4px">npm run companion:https</code><br>
+      2. Open the companion URL in a new tab (e.g., https://192.168.1.159:8787)<br>
+      3. Accept the self-signed certificate warning<br>
+      4. Return here and click "▶ Run via AdsPower" again
     </div>
     <pre id="runJson"></pre>
     <h3>Run log</h3><pre id="runLog"></pre>
@@ -234,7 +235,7 @@ function restoreFormData() {
     $('screenshots').checked = data.screenshots !== undefined ? data.screenshots : true;
     $('cleanup').checked = data.cleanup !== undefined ? data.cleanup : true;
     $('captcha').checked = data.captcha !== undefined ? data.captcha : false;
-    $('companionUrl').value = data.companionUrl || 'http://127.0.0.1:8787';
+    $('companionUrl').value = data.companionUrl || 'https://192.168.1.100:8787';
     
     // Restore profiles
     if (data.profiles && data.profiles.length) {

@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 const http = require('http');
+const https = require('https');
 const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
@@ -8,6 +9,7 @@ const { validateConfig, runConfig } = require('../runner/otto-runner.cjs');
 
 const HOST = process.env.HOST || '0.0.0.0';
 const PORT = Number(process.env.PORT || 8787);
+const USE_HTTPS = process.env.HTTPS === 'true' || process.env.HTTPS === '1';
 const ALLOWED_ORIGINS = new Set(['https://otto-qa-runner.vercel.app', 'http://localhost', 'http://127.0.0.1']);
 // Allow any local network origin for remote device access
 const ALLOW_LOCAL_NETWORK = true;
@@ -85,11 +87,34 @@ function startRun(config) {
   return id;
 }
 
-const server = http.createServer(async (req, res) => {
+// Create server (HTTP or HTTPS)
+let server;
+if (USE_HTTPS) {
+  const certPath = path.join(__dirname, '../certs/cert.pem');
+  const keyPath = path.join(__dirname, '../certs/key.pem');
+  
+  if (!fs.existsSync(certPath) || !fs.existsSync(keyPath)) {
+    console.error('❌ HTTPS certificates not found. Run: npm run generate-certs');
+    process.exit(1);
+  }
+  
+  const options = {
+    key: fs.readFileSync(keyPath),
+    cert: fs.readFileSync(certPath)
+  };
+  server = https.createServer(options, async (req, res) => {
+    // Reuse the same handler
+    await requestHandler(req, res);
+  });
+} else {
+  server = http.createServer(requestHandler);
+}
+
+async function requestHandler(req, res) {
   const origin = req.headers.origin || '';
   const allowOrigin = ALLOWED_ORIGINS.has(origin) || (ALLOW_LOCAL_NETWORK && origin) ? origin : 'null';
   if (req.method === 'OPTIONS') { res.writeHead(204, {'Access-Control-Allow-Origin': allowOrigin, 'Access-Control-Allow-Methods':'GET,POST,OPTIONS', 'Access-Control-Allow-Headers':'Content-Type', 'Vary':'Origin'}); return res.end(); }
-  if (req.url === '/health' && req.method === 'GET') return send(res, 200, {ok:true, service:'otto-qa-companion', host:HOST, port:PORT}, origin);
+  if (req.url === '/health' && req.method === 'GET') return send(res, 200, {ok:true, service:'otto-qa-companion', host:HOST, port:PORT, https: USE_HTTPS}, origin);
   if (req.url === '/run' && req.method === 'POST') { try { const config=safeConfig(await readBody(req)); const errors=validateConfig(config); if(errors.length) return send(res,422,{ok:false,error:errors.join('; ')},origin); return send(res,202,{ok:true,run_id:startRun(config)},origin); } catch(e) { return send(res,400,{ok:false,error:e.message},origin); } }
   
   const matchRun = req.url.match(/^\/runs\/([a-f0-9-]+)$/);
@@ -97,7 +122,6 @@ const server = http.createServer(async (req, res) => {
     const id = matchRun[1];
     let state = runs.get(id);
     if (!state) {
-      // Try to load from disk
       const filepath = path.join(REPORTS_DIR, `${id}.json`);
       if (fs.existsSync(filepath)) {
         try {
@@ -129,17 +153,22 @@ const server = http.createServer(async (req, res) => {
   }
   
   return send(res,404,{ok:false,error:'Not found'},origin);
-});
+}
 
 server.listen(PORT, HOST, () => {
   const ips = getLocalIPs();
+  const protocol = USE_HTTPS ? 'https' : 'http';
   console.log('\n╔═══════════════════════════════════════════════════════╗');
   console.log('║       Otto QA Companion - AdsPower Runner            ║');
   console.log('╚═══════════════════════════════════════════════════════╝\n');
-  console.log(`✅ Companion listening on http://${HOST}:${PORT}`);
+  console.log(`✅ Companion listening on ${protocol}://${HOST}:${PORT}`);
+  if (USE_HTTPS) {
+    console.log(`🔒 HTTPS enabled (self-signed certificate)`);
+    console.log(`⚠️  You'll need to accept the security warning in your browser\n`);
+  }
   if (ips.length > 0) {
     console.log(`\n📱 Remote device access URLs:`);
-    ips.forEach(ip => console.log(`   http://${ip}:${PORT}`));
+    ips.forEach(ip => console.log(`   ${protocol}://${ip}:${PORT}`));
     console.log(`\n💡 Tip: Enter one of these URLs in the Vercel app's`);
     console.log(`   "Companion Server URL" field to run tests remotely.\n`);
   }

@@ -1,58 +1,84 @@
 # Quick Start
 
-Run from anywhere:
+## For Remote Access (Recommended)
+
+Run with HTTPS to work from Vercel app on any device:
+
 ```bash
 /Users/northsea/ClaudeProjects/otto-qa-runner/start-companion.sh
 ```
 
-Or add an alias to your `~/.zshrc`:
+Or manually:
 ```bash
-echo 'alias otto-companion="cd /Users/northsea/ClaudeProjects/otto-qa-runner && npm run companion"' >> ~/.zshrc
+cd /Users/northsea/ClaudeProjects/otto-qa-runner
+npm run companion:https
+```
+
+**First time setup:** Accept the self-signed certificate warning in your browser when accessing the companion URL.
+
+## For Local Testing Only
+
+Run with HTTP (works only from localhost):
+```bash
+cd /Users/northsea/ClaudeProjects/otto-qa-runner
+npm run companion
+```
+
+## Set up Alias (Optional)
+
+Add to your `~/.zshrc`:
+```bash
+echo 'alias otto-companion="cd /Users/northsea/ClaudeProjects/otto-qa-runner && npm run companion:https"' >> ~/.zshrc
 source ~/.zshrc
 ```
 
-Then simply run:
+Then from anywhere:
 ```bash
 otto-companion
-```
-
-## Direct Commands
-
-```bash
-# Navigate to project
-cd /Users/northsea/ClaudeProjects/otto-qa-runner
-
-# Start companion
-npm run companion
-
-# Start local HTTP server (for testing from http://localhost:3001)
-npm run serve
-
-# Start both at once
-npm run dev
 ```
 
 ## What You'll See
 
 ```
-╔═══════════════════════════════════════════════════════╗
+╔══════��════════════════════════════════════════════════╗
 ║       Otto QA Companion - AdsPower Runner            ║
 ╚═══════════════════════════════════════════════════════╝
 
-✅ Companion listening on http://0.0.0.0:8787
+✅ Companion listening on https://0.0.0.0:8787
+🔒 HTTPS enabled (self-signed certificate)
+⚠️  You'll need to accept the security warning in your browser
 
 📱 Remote device access URLs:
-   http://192.168.1.159:8787
-   http://192.168.1.197:8787
-   http://192.168.68.112:8787
+   https://192.168.1.159:8787
+   https://192.168.1.197:8787
 
 💡 Tip: Enter one of these URLs in the Vercel app's
    "Companion Server URL" field to run tests remotely.
 ```
 
-Copy one of the shown IP addresses and use it in the Vercel app!
+## Using with Vercel App
 
-## Web Interface
+1. **Copy one of the HTTPS URLs** shown above (e.g., `https://192.168.1.159:8787`)
+2. **Visit:** https://otto-qa-runner.vercel.app
+3. **Password:** `rereeu`
+4. **Paste the URL** into "Companion Server URL" field
+5. **First time only:** Click the URL to open it in a new tab and accept the certificate warning
+6. **Return to the app** and click **▶ Run via AdsPower**
+7. **Watch live logs!** ✨
 
-Visit: https://otto-qa-runner.vercel.app
-Password: `rereeu`
+## Troubleshooting
+
+### "Connection blocked by browser security"
+- Make sure you're using HTTPS URLs (not http://)
+- Open the companion URL in a new tab first to accept the certificate
+- Try refreshing the Vercel app page
+
+### "Certificate warning"
+- This is normal for self-signed certificates
+- Click "Advanced" → "Proceed" (or equivalent in your browser)
+- You only need to do this once per device
+
+### "Cannot connect"
+- Verify companion is running: `ps aux | grep companion`
+- Check firewall allows incoming connections on port 8787
+- Ensure both devices are on the same WiFi network

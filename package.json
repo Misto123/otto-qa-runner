@@ -6,8 +6,10 @@
   "scripts": {
     "runner": "node runner/otto-runner.cjs",
     "companion": "node companion/server.cjs",
+    "companion:https": "HTTPS=true node companion/server.cjs",
     "serve": "node scripts/serve-local.cjs",
     "dev": "concurrently \"npm run serve\" \"npm run companion\"",
+    "generate-certs": "mkdir -p certs && openssl req -x509 -newkey rsa:2048 -nodes -sha256 -subj '/CN=localhost' -keyout certs/key.pem -out certs/cert.pem -days 365",
     "validate": "node --check runner/otto-runner.cjs && node --check companion/server.cjs",
     "validate:all": "npm run validate && node --check companion/server.cjs && node --check tests/optional-position.cjs",
     "test": "npm run validate && node tests/optional-position.cjs"
