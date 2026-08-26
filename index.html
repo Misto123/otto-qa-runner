@@ -82,12 +82,17 @@ main{max-width:980px;margin:0 auto;padding:44px 22px 72px}.eyebrow{color:var(--a
         <div class="full">
           <label for="companionUrl">Companion Server URL</label>
           <input id="companionUrl" type="url" value="https://192.168.1.100:8787" placeholder="https://192.168.1.100:8787">
-          <div class="hint">Use HTTPS with your Mac's local IP address (e.g., https://192.168.1.100:8787). The companion server shows available IPs when it starts. First time: open the URL in a new tab to accept the certificate.</div>
+          <div class="hint">Paste the HTTPS URL shown when you start the companion (e.g., https://192.168.1.159:8787)</div>
         </div>
+      </div>
+      <div id="connectionStatus" class="notice" style="display:none;margin-top:1rem"></div>
+      <div style="margin-top:1rem">
+        <button id="testConnection" class="secondary" type="button">🔌 Test Connection</button>
+        <span id="connectionHelp" style="margin-left:1rem;color:var(--text-dim);font-size:0.9rem"></span>
       </div>
     </section>
     <div class="actions">
-      <button id="runTest" class="primary" type="button">▶ Run via AdsPower</button>
+      <button id="runTest" class="primary" type="button" disabled title="Test connection first">▶ Run via AdsPower</button>
     </div>
     <div id="error" class="error"></div>
   </form>
@@ -95,13 +100,11 @@ main{max-width:980px;margin:0 auto;padding:44px 22px 72px}.eyebrow{color:var(--a
     <h2>Local run status</h2>
     <p id="runStatus">The local companion must be running on your Mac.</p>
     <div id="mixedContentWarning" class="notice" style="display:none;background:#3d1a1a;border-color:var(--danger)">
-      <strong>⚠️ Connection Failed</strong><br>
-      Make sure the companion is running with HTTPS and you've accepted the certificate.<br><br>
-      <strong>Steps:</strong><br>
-      1. Start companion: <code style="background:var(--panel2);padding:2px 6px;border-radius:4px">npm run companion:https</code><br>
-      2. Open the companion URL in a new tab (e.g., https://192.168.1.159:8787)<br>
-      3. Accept the self-signed certificate warning<br>
-      4. Return here and click "▶ Run via AdsPower" again
+      <strong>❌ Connection Lost</strong><br>
+      The test couldn't connect to the companion. Please:<br><br>
+      1. Make sure companion is still running<br>
+      2. Click "🔌 Test Connection" above to verify<br>
+      3. Try running the test again
     </div>
     <pre id="runJson"></pre>
     <h3>Run log</h3><pre id="runLog"></pre>
@@ -353,6 +356,90 @@ $('qaForm').addEventListener('submit', e => {
   saveFormData();
 });
 
+// Test connection to companion
+async function testConnection() {
+  const companionUrl = $('companionUrl').value.trim();
+  if (!companionUrl) {
+    showConnectionStatus('error', 'Please enter a companion URL');
+    return;
+  }
+  
+  $('testConnection').disabled = true;
+  $('testConnection').textContent = '🔄 Testing...';
+  $('connectionStatus').style.display = 'none';
+  $('connectionHelp').textContent = '';
+  
+  try {
+    const response = await fetch(`${companionUrl}/health`, {
+      method: 'GET',
+      headers: {'Accept': 'application/json'}
+    });
+    
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    const data = await response.json();
+    
+    if (data.ok && data.service === 'otto-qa-companion') {
+      showConnectionStatus('success', `✅ Connected! Companion is ready${data.https ? ' (HTTPS)' : ''}`);
+      $('runTest').disabled = false;
+      $('runTest').title = '';
+      $('connectionHelp').textContent = 'Ready to run tests';
+      $('connectionHelp').style.color = 'var(--good)';
+    } else {
+      throw new Error('Invalid response from companion');
+    }
+  } catch (error) {
+    const isHttps = companionUrl.startsWith('https://');
+    const isCertError = error.message.includes('Failed to fetch') || error.message.includes('NetworkError');
+    
+    if (isHttps && isCertError) {
+      showConnectionStatus('warning', 
+        `⚠️ Certificate not accepted yet. Click the button below to accept it, then test again.`
+      );
+      $('connectionHelp').innerHTML = `<a href="${companionUrl}" target="_blank" style="color:var(--accent);text-decoration:underline">Open ${companionUrl} in new tab</a>`;
+    } else {
+      showConnectionStatus('error', `❌ Cannot connect: ${error.message || 'Connection failed'}`);
+      $('connectionHelp').textContent = 'Make sure companion is running';
+    }
+    
+    $('runTest').disabled = true;
+    $('runTest').title = 'Test connection first';
+  } finally {
+    $('testConnection').disabled = false;
+    $('testConnection').textContent = '🔌 Test Connection';
+  }
+}
+
+function showConnectionStatus(type, message) {
+  const statusEl = $('connectionStatus');
+  statusEl.style.display = 'block';
+  statusEl.textContent = message;
+  
+  if (type === 'success') {
+    statusEl.style.background = '#1a3d2a';
+    statusEl.style.borderColor = 'var(--good)';
+    statusEl.style.color = 'var(--good)';
+  } else if (type === 'warning') {
+    statusEl.style.background = '#3d2a1a';
+    statusEl.style.borderColor = 'var(--accent)';
+    statusEl.style.color = 'var(--accent)';
+  } else {
+    statusEl.style.background = '#3d1a1a';
+    statusEl.style.borderColor = 'var(--danger)';
+    statusEl.style.color = 'var(--danger)';
+  }
+}
+
+$('testConnection').addEventListener('click', testConnection);
+
+// Auto-test on URL change
+$('companionUrl').addEventListener('change', () => {
+  $('runTest').disabled = true;
+  $('runTest').title = 'Test connection first';
+  $('connectionStatus').style.display = 'none';
+  $('connectionHelp').textContent = 'Click "Test Connection" to verify';
+  $('connectionHelp').style.color = 'var(--muted)';
+});
+
 async function runLocalTest() {
   if (!validateForm()) return;
   const companionUrl = $('companionUrl').value.trim() || 'http://127.0.0.1:8787';
@@ -370,13 +457,8 @@ async function runLocalTest() {
     $('runStatus').textContent=`Run started: ${data.run_id}`;
     const poll=async()=>{const state=await (await fetch(`${companionUrl}/runs/${encodeURIComponent(data.run_id)}`)).json();$('runJson').textContent=JSON.stringify(state.report||state,null,2);$('runLog').textContent=(state.log||[]).join('\n');if(state.status==='running')setTimeout(poll,1500);else $('runStatus').textContent=`Run ${state.status}.`;}; poll();
   } catch(error) {
-    const isMixedContent = window.location.protocol === 'https:' && (error.message.includes('Failed to fetch') || error.message.includes('NetworkError'));
-    if (isMixedContent) {
-      $('runStatus').textContent='Connection blocked by browser security';
-      $('mixedContentWarning').style.display='block';
-    } else {
-      $('runStatus').textContent=`Could not connect: ${error.message}`;
-    }
+    $('runStatus').textContent=`Failed to start test: ${error.message}`;
+    $('mixedContentWarning').style.display='block';
   }
 }
 $('runTest').addEventListener('click',runLocalTest);
