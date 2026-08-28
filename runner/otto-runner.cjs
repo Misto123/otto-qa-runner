@@ -775,10 +775,11 @@ async function runProfileTest(profileId, config, outputDir) {
   } finally {
     result.completed_at = new Date().toISOString();
     
-    // Cleanup
-    if (config.cleanup.close_tabs && page) {
+    // Always cleanup - close page/tabs
+    if (page) {
       try {
         await page.close();
+        console.log(`[${profileId}] Tab closed`);
       } catch (err) {
         console.error(`[${profileId}] Error closing page:`, err.message);
       }
@@ -792,7 +793,7 @@ async function runProfileTest(profileId, config, outputDir) {
       }
     }
     
-    // Always stop profile
+    // Stop profile if configured
     if (config.cleanup.stop_profiles) {
       await stopProfile(profileId);
     }

@@ -284,7 +284,15 @@ function restoreFormData() {
     $('screenshots').checked = data.screenshots !== undefined ? data.screenshots : true;
     $('cleanup').checked = data.cleanup !== undefined ? data.cleanup : true;
     $('captcha').checked = data.captcha !== undefined ? data.captcha : false;
-    $('companionUrl').value = data.companionUrl || 'https://127.0.0.1:8787';
+    
+    // Validate and sanitize companion URL
+    let companionUrl = data.companionUrl || 'https://127.0.0.1:8787';
+    // Only allow localhost/127.0.0.1 or local network IPs (192.168.x.x)
+    if (!companionUrl.match(/^https?:\/\/(localhost|127\.0\.0\.1|192\.168\.\d{1,3}\.\d{1,3}):\d+$/)) {
+      companionUrl = 'https://127.0.0.1:8787';
+    }
+    $('companionUrl').value = companionUrl;
+    
     $('sendMessage').checked = data.sendMessage !== undefined ? data.sendMessage : false;
     $('messageLanguage').value = data.messageLanguage || 'de';
     $('messageText').value = data.messageText || '';
@@ -514,7 +522,7 @@ async function testConnection() {
     } else {
       showConnectionStatus('error', `❌ Cannot connect: ${error.message || 'Connection failed'}`);
       $('connectionHelp').style.display = 'block';
-      $('connectionHelp').innerHTML = '<span style="color:var(--text-dim)">Make sure companion is running: <code>HTTPS=true node companion/server.cjs</code></span>';
+      $('connectionHelp').innerHTML = '<span style="color:var(--text-dim)">Make sure companion is running: <code>HTTPS=true node companion/server.cjs</code></span><br><br><button onclick="localStorage.clear();location.reload()" class="secondary" style="margin-top:8px;font-size:0.9rem">🔄 Reset Settings & Reload</button>';
     }
     
     $('runTest').disabled = true;
