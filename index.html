@@ -3,7 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Browser QA Run Configurator</title>
+<title>Otto.de Product Visits - QA Runner</title>
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
 <style>
 :root{color-scheme:dark;--bg:#101214;--panel:#181b1f;--panel2:#20242a;--text:#f3f4f6;--muted:#9ba3af;--line:#30363d;--accent:#ffb454;--good:#8ee6b2;--danger:#ff8c8c}
 *{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at 85% 0,#3b2a16 0,transparent 34%),var(--bg);color:var(--text);font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
@@ -118,9 +119,11 @@ main{max-width:980px;margin:0 auto;padding:44px 22px 72px}.eyebrow{color:var(--a
     <input id="companionUrl" type="hidden" value="https://127.0.0.1:8787">
     
     <div class="actions">
+      <a href="https://127.0.0.1:8787" target="_blank" class="secondary" style="text-decoration:none;display:inline-block">🔓 Accept Certificate First</a>
       <button id="testConnection" class="secondary" type="button">🔌 Test Connection</button>
       <button id="runTest" class="primary" type="button" disabled title="Test connection first">▶ Run via AdsPower</button>
     </div>
+    <div class="hint" style="margin-top:8px">1. Click "Accept Certificate" and accept the security warning in new tab<br>2. Come back and click "Test Connection"<br>3. Once connected, click "Run via AdsPower"</div>
     <div id="connectionStatus" class="notice" style="display:none;margin-top:1rem"></div>
     <div id="connectionHelp" style="margin-top:1rem;display:none"></div>
     <div id="error" class="error"></div>
