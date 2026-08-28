@@ -69,6 +69,12 @@ main{max-width:980px;margin:0 auto;padding:44px 22px 72px}.eyebrow{color:var(--a
         <label class="checkrow"><input type="checkbox" name="profile" value="k1fgmwtq" checked> k1fgmwtq</label>
         <label class="checkrow"><input type="checkbox" name="profile" value="k1f39ocj" checked> k1f39ocj</label>
         <label class="checkrow"><input type="checkbox" name="profile" value="k1e3u6vd" checked> k1e3u6vd</label>
+        <label class="checkrow"><input type="checkbox" name="profile" value="k1g7h2np"> k1g7h2np</label>
+        <label class="checkrow"><input type="checkbox" name="profile" value="k1h8i3oq"> k1h8i3oq</label>
+        <label class="checkrow"><input type="checkbox" name="profile" value="k1i9j4pr"> k1i9j4pr</label>
+        <label class="checkrow"><input type="checkbox" name="profile" value="k1j0k5qs"> k1j0k5qs</label>
+        <label class="checkrow"><input type="checkbox" name="profile" value="k1k1l6rt"> k1k1l6rt</label>
+        <label class="checkrow"><input type="checkbox" name="profile" value="k1l2m7su"> k1l2m7su</label>
       </div>
       <div class="profile-add" style="margin-top:12px;display:flex;gap:8px">
         <input id="newProfile" type="text" placeholder="Enter profile ID" style="flex:1">
@@ -119,9 +125,10 @@ main{max-width:980px;margin:0 auto;padding:44px 22px 72px}.eyebrow{color:var(--a
     <div id="connectionHelp" style="margin-top:1rem;display:none"></div>
     <div id="error" class="error"></div>
   </form>
-  <section id="runOutput" class="output panel" aria-live="polite">
-    <h2>Local run status</h2>
-    <p id="runStatus">The local companion must be running on your Mac.</p>
+  <section id="runOutput" class="output panel" aria-live="polite" style="display:none">
+    <h2>Run Status</h2>
+    <p id="runStatus" style="font-size:1.1rem;font-weight:600;margin-bottom:1rem">Ready to run...</p>
+    <div id="runEstimate" style="display:none;background:var(--panel2);padding:12px;border-radius:8px;margin-bottom:1rem;border-left:3px solid var(--accent)"></div>
     <div id="mixedContentWarning" class="notice" style="display:none;background:#3d1a1a;border-color:var(--danger)">
       <strong>❌ Connection Lost</strong><br>
       The test couldn't connect to the companion. Please:<br><br>
@@ -129,8 +136,14 @@ main{max-width:980px;margin:0 auto;padding:44px 22px 72px}.eyebrow{color:var(--a
       2. Click "🔌 Test Connection" above to verify<br>
       3. Try running the test again
     </div>
-    <pre id="runJson"></pre>
-    <h3>Run log</h3><pre id="runLog"></pre>
+    <details open style="margin-top:1rem">
+      <summary style="font-weight:700;cursor:pointer;margin-bottom:0.5rem">📊 Live Logs</summary>
+      <pre id="runLog" style="background:var(--panel2);padding:12px;border-radius:8px;max-height:300px;overflow-y:auto;font-size:0.9rem"></pre>
+    </details>
+    <details style="margin-top:1rem">
+      <summary style="font-weight:700;cursor:pointer;margin-bottom:0.5rem">📄 Full Report (JSON)</summary>
+      <pre id="runJson" style="background:var(--panel2);padding:12px;border-radius:8px;max-height:400px;overflow-y:auto;font-size:0.85rem"></pre>
+    </details>
   </section>
 </main>
 </div>
@@ -458,16 +471,23 @@ async function testConnection() {
   }
   
   $('testConnection').disabled = true;
-  $('testConnection').textContent = '🔄 Testing...';
+  $('testConnection').textContent = '🔄 Testing... (10s timeout)';
   $('connectionStatus').style.display = 'none';
   $('connectionHelp').style.display = 'none';
   $('connectionHelp').innerHTML = '';
   
+  const timeout = new Promise((_, reject) => 
+    setTimeout(() => reject(new Error('Connection timeout after 10 seconds')), 10000)
+  );
+  
   try {
-    const response = await fetch(`${companionUrl}/health`, {
-      method: 'GET',
-      headers: {'Accept': 'application/json'}
-    });
+    const response = await Promise.race([
+      fetch(`${companionUrl}/health`, {
+        method: 'GET',
+        headers: {'Accept': 'application/json'}
+      }),
+      timeout
+    ]);
     
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     const data = await response.json();
@@ -494,7 +514,7 @@ async function testConnection() {
     } else {
       showConnectionStatus('error', `❌ Cannot connect: ${error.message || 'Connection failed'}`);
       $('connectionHelp').style.display = 'block';
-      $('connectionHelp').innerHTML = '<span style="color:var(--text-dim)">Make sure companion is running on your Mac</span>';
+      $('connectionHelp').innerHTML = '<span style="color:var(--text-dim)">Make sure companion is running: <code>HTTPS=true node companion/server.cjs</code></span>';
     }
     
     $('runTest').disabled = true;
@@ -538,31 +558,80 @@ $('companionUrl').addEventListener('change', () => {
 
 async function runLocalTest() {
   if (!validateForm()) return;
-  const companionUrl = $('companionUrl').value.trim() || 'http://127.0.0.1:8787';
+  const companionUrl = $('companionUrl').value.trim() || 'https://127.0.0.1:8787';
+  
+  const profiles = [...document.querySelectorAll('input[name=profile]:checked')].map(x => x.value);
+  const totalVisits = +$('totalVisits').value || 9;
+  const avgTimePerVisit = 45; // seconds
+  const estimatedDuration = Math.ceil((totalVisits * avgTimePerVisit) / 60);
+  
   const config = {
-    site_url: $('site').value.trim(), product_url: $('product').value.trim() || null,
-    profiles: [...document.querySelectorAll('input[name=profile]:checked')].map(x => x.value),
+    site_url: $('site').value.trim(), 
+    product_url: $('product').value.trim() || null,
+    profiles,
     search: { keywords: $('keywords').value.trim(), ...($('position').value.trim() ? {result_position:+$('position').value} : {}) },
-    actions: {visit_product:true, scroll:{enabled:+$('maxScroll').value>0,min:+$('minScroll').value,max:+$('maxScroll').value}, add_to_cart:$('cart').checked, remove_after_test:$('remove').checked, accept_cookies:$('cookies').checked},
+    actions: {
+      visit_product:true, 
+      scroll:{enabled:+$('maxScroll').value>0, min:+$('minScroll').value, max:+$('maxScroll').value}, 
+      add_to_cart:$('cart').checked, 
+      remove_after_test:$('remove').checked, 
+      accept_cookies:$('cookies').checked
+    },
     wait_profile:$('delay').value, 
     limits:{stop_on_captcha:$('captcha').checked, stop_on_checkout:true, stop_on_payment:true}, 
     report:{screenshots:$('screenshots').checked}, 
     cleanup:{close_tabs:$('cleanup').checked, stop_profiles:$('cleanup').checked},
-    messaging: $('sendMessage').checked ? {
-      enabled: true,
-      text: $('messageText').value.trim() || 'Guten Tag, ich interessiere mich für dieses Produkt. Können Sie mir weitere Informationen geben?',
-      language: $('messageLanguage').value,
-      seller_count: +$('messageCount').value
-    } : { enabled: false }
+    messaging: { enabled: false }
   };
-  $('runOutput').style.display='block'; $('runStatus').textContent=`Connecting to ${companionUrl}...`; $('mixedContentWarning').style.display='none';
+  
+  $('runOutput').style.display='block';
+  $('runStatus').textContent=`🚀 Starting test run...`;
+  $('runEstimate').style.display='block';
+  $('runEstimate').innerHTML = `<strong>⏱️ Estimated Duration:</strong> ~${estimatedDuration} minutes (${totalVisits} visits × ${profiles.length} profiles)<br><strong>Profiles:</strong> ${profiles.join(', ')}`;
+  $('mixedContentWarning').style.display='none';
+  $('runLog').textContent = '';
+  $('runJson').textContent = '';
+  
   try {
-    const response=await fetch(`${companionUrl}/run`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(config)});
-    const data=await response.json(); if(!response.ok) throw new Error(data.error||'Run rejected');
-    $('runStatus').textContent=`Run started: ${data.run_id}`;
-    const poll=async()=>{const state=await (await fetch(`${companionUrl}/runs/${encodeURIComponent(data.run_id)}`)).json();$('runJson').textContent=JSON.stringify(state.report||state,null,2);$('runLog').textContent=(state.log||[]).join('\n');if(state.status==='running')setTimeout(poll,1500);else $('runStatus').textContent=`Run ${state.status}.`;}; poll();
+    const response = await fetch(`${companionUrl}/run`, {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify(config)
+    });
+    
+    const data = await response.json();
+    if(!response.ok) throw new Error(data.error||'Run rejected');
+    
+    $('runStatus').textContent=`✅ Run started successfully!`;
+    $('runEstimate').innerHTML += `<br><strong>Run ID:</strong> ${data.run_id}<br><strong>Status:</strong> <span style="color:var(--accent)">● Running...</span>`;
+    
+    const startTime = Date.now();
+    const poll = async () => {
+      try {
+        const state = await (await fetch(`${companionUrl}/runs/${encodeURIComponent(data.run_id)}`)).json();
+        const elapsed = Math.floor((Date.now() - startTime) / 1000);
+        const elapsedMin = Math.floor(elapsed / 60);
+        const elapsedSec = elapsed % 60;
+        
+        $('runJson').textContent = JSON.stringify(state.report || state, null, 2);
+        $('runLog').textContent = (state.log || []).join('\n');
+        
+        if (state.status === 'running') {
+          $('runStatus').textContent = `⏳ Running... (${elapsedMin}m ${elapsedSec}s elapsed)`;
+          setTimeout(poll, 1500);
+        } else {
+          const totalTime = `${elapsedMin}m ${elapsedSec}s`;
+          const statusIcon = state.status === 'completed' ? '✅' : state.status === 'failed' ? '❌' : '⚠️';
+          $('runStatus').textContent = `${statusIcon} Run ${state.status} in ${totalTime}`;
+          $('runEstimate').innerHTML += `<br><strong>Final Status:</strong> <span style="color:${state.status === 'completed' ? 'var(--good)' : 'var(--danger)'}">● ${state.status.toUpperCase()}</span>`;
+        }
+      } catch (pollError) {
+        console.error('Poll error:', pollError);
+      }
+    };
+    poll();
   } catch(error) {
-    $('runStatus').textContent=`Failed to start test: ${error.message}`;
+    $('runStatus').textContent=`❌ Failed to start test: ${error.message}`;
     $('mixedContentWarning').style.display='block';
   }
 }
