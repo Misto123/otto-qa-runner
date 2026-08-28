@@ -445,6 +445,144 @@ async function removeFromCart(page, waits) {
 }
 
 /**
+ * Send message to seller
+ */
+async function sendMessageToSeller(page, waits, messageText, language = 'de') {
+  console.log('  → Attempting to send message to seller');
+  
+  try {
+    // Look for "Contact Seller" or "Verkäufer kontaktieren" button/link
+    const contactSelectors = language === 'de' ? [
+      'a:has-text("Verkäufer kontaktieren")',
+      'button:has-text("Verkäufer kontaktieren")',
+      'a:has-text("Kontakt")',
+      'button:has-text("Kontakt")',
+      'a[href*="contact"]',
+      'button[data-testid*="contact"]',
+      '[data-qa*="contact-seller"]',
+      '.contact-seller'
+    ] : [
+      'a:has-text("Contact Seller")',
+      'button:has-text("Contact Seller")',
+      'a:has-text("Contact")',
+      'button:has-text("Contact")',
+      'a[href*="contact"]',
+      'button[data-testid*="contact"]',
+      '[data-qa*="contact-seller"]',
+      '.contact-seller'
+    ];
+    
+    await sleep(waits.medium());
+    
+    // Click contact button
+    let contactClicked = false;
+    for (const selector of contactSelectors) {
+      try {
+        const element = await page.$(selector);
+        if (element) {
+          const isVisible = await element.isVisible().catch(() => false);
+          if (isVisible) {
+            await element.click();
+            console.log('  → Clicked contact seller button');
+            await sleep(waits.medium());
+            contactClicked = true;
+            break;
+          }
+        }
+      } catch (err) {
+        // Continue to next selector
+      }
+    }
+    
+    if (!contactClicked) {
+      console.log('  → Could not find contact seller button');
+      return false;
+    }
+    
+    // Find message textarea
+    const messageSelectors = [
+      'textarea[name*="message"]',
+      'textarea[id*="message"]',
+      'textarea[placeholder*="Nachricht"]',
+      'textarea[placeholder*="Message"]',
+      'textarea[data-testid*="message"]',
+      'textarea'
+    ];
+    
+    await sleep(waits.short());
+    
+    let messageField = null;
+    for (const selector of messageSelectors) {
+      try {
+        const element = await page.$(selector);
+        if (element) {
+          const isVisible = await element.isVisible().catch(() => false);
+          if (isVisible) {
+            messageField = element;
+            break;
+          }
+        }
+      } catch (err) {
+        // Continue
+      }
+    }
+    
+    if (!messageField) {
+      console.log('  → Could not find message textarea');
+      return false;
+    }
+    
+    // Type message with human-like delays
+    await messageField.click();
+    await sleep(waits.short());
+    await messageField.type(messageText, { delay: randomWait(50, 150) });
+    console.log('  → Message typed');
+    await sleep(waits.medium());
+    
+    // Find and click send button
+    const sendSelectors = language === 'de' ? [
+      'button:has-text("Senden")',
+      'button:has-text("Nachricht senden")',
+      'button:has-text("Absenden")',
+      'button[type="submit"]',
+      'button[data-testid*="send"]',
+      '[data-qa*="send"]'
+    ] : [
+      'button:has-text("Send")',
+      'button:has-text("Send Message")',
+      'button:has-text("Submit")',
+      'button[type="submit"]',
+      'button[data-testid*="send"]',
+      '[data-qa*="send"]'
+    ];
+    
+    for (const selector of sendSelectors) {
+      try {
+        const button = await page.$(selector);
+        if (button) {
+          const isVisible = await button.isVisible().catch(() => false);
+          if (isVisible) {
+            await button.click();
+            console.log('  → Message sent to seller');
+            await sleep(waits.medium());
+            return true;
+          }
+        }
+      } catch (err) {
+        // Continue
+      }
+    }
+    
+    console.log('  → Could not find send button');
+    return false;
+    
+  } catch (err) {
+    console.error('  → Error sending message:', err.message);
+    return false;
+  }
+}
+
+/**
  * Take screenshot
  */
 async function takeScreenshot(page, profileId, step, outputDir) {
@@ -604,6 +742,25 @@ async function runProfileTest(profileId, config, outputDir) {
           if (removed) {
             result.steps.push({ step: 'removed_from_cart', timestamp: new Date().toISOString() });
           }
+        }
+      }
+    }
+    
+    // Send message to seller (if enabled)
+    if (config.messaging && config.messaging.enabled) {
+      await sleep(waits.medium());
+      const messageSent = await sendMessageToSeller(
+        page, 
+        waits, 
+        config.messaging.text, 
+        config.messaging.language
+      );
+      if (messageSent) {
+        result.steps.push({ step: 'message_sent', timestamp: new Date().toISOString() });
+        
+        if (config.report.screenshots) {
+          const screenshot = await takeScreenshot(page, profileId, 'message_sent', outputDir);
+          if (screenshot) result.screenshots.push(screenshot);
         }
       }
     }

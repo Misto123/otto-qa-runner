@@ -77,6 +77,29 @@ main{max-width:980px;margin:0 auto;padding:44px 22px 72px}.eyebrow{color:var(--a
       </div>
     </div>
     <div class="notice">Safety defaults: no checkout, payment, account changes, or CAPTCHA solving. CAPTCHA stopping is configurable, and profiles are always cleaned up in the finally block when enabled.</div></section>
+    <section class="panel"><h2>Seller Messaging (Optional)</h2>
+      <div class="grid">
+        <div class="full">
+          <label><input id="sendMessage" type="checkbox"> Send message to sellers</label>
+        </div>
+        <div class="full">
+          <label for="messageLanguage">Message Language</label>
+          <select id="messageLanguage">
+            <option value="de" selected>Deutsch (German)</option>
+            <option value="en">English</option>
+          </select>
+        </div>
+        <div class="full">
+          <label for="messageText">Message Text</label>
+          <textarea id="messageText" rows="4" placeholder="Guten Tag, ich interessiere mich für dieses Produkt. Können Sie mir weitere Informationen geben?">Guten Tag, ich interessiere mich für dieses Produkt. Können Sie mir weitere Informationen geben?</textarea>
+          <div class="hint">Message will be sent to sellers after viewing products. Default is German.</div>
+        </div>
+        <div class="full">
+          <label for="messageCount">Number of sellers to message</label>
+          <input id="messageCount" type="number" min="1" max="10" value="2">
+        </div>
+      </div>
+    </section>
     <section class="panel"><h2>Companion Connection</h2>
       <div class="grid">
         <div class="full">
@@ -213,7 +236,11 @@ function saveFormData() {
     screenshots: $('screenshots').checked,
     cleanup: $('cleanup').checked,
     captcha: $('captcha').checked,
-    companionUrl: $('companionUrl').value.trim()
+    companionUrl: $('companionUrl').value.trim(),
+    sendMessage: $('sendMessage').checked,
+    messageLanguage: $('messageLanguage').value,
+    messageText: $('messageText').value.trim(),
+    messageCount: $('messageCount').value
   };
   localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
 }
@@ -239,6 +266,10 @@ function restoreFormData() {
     $('cleanup').checked = data.cleanup !== undefined ? data.cleanup : true;
     $('captcha').checked = data.captcha !== undefined ? data.captcha : false;
     $('companionUrl').value = data.companionUrl || 'https://192.168.1.100:8787';
+    $('sendMessage').checked = data.sendMessage !== undefined ? data.sendMessage : false;
+    $('messageLanguage').value = data.messageLanguage || 'de';
+    $('messageText').value = data.messageText || '';
+    $('messageCount').value = data.messageCount || 2;
     
     // Restore profiles
     if (data.profiles && data.profiles.length) {
@@ -451,7 +482,16 @@ async function runLocalTest() {
     profiles: [...document.querySelectorAll('input[name=profile]:checked')].map(x => x.value),
     search: { keywords: $('keywords').value.trim(), ...($('position').value.trim() ? {result_position:+$('position').value} : {}) },
     actions: {visit_product:true, scroll:{enabled:+$('maxScroll').value>0,min:+$('minScroll').value,max:+$('maxScroll').value}, add_to_cart:$('cart').checked, remove_after_test:$('remove').checked, accept_cookies:$('cookies').checked},
-    wait_profile:$('delay').value, limits:{stop_on_captcha:$('captcha').checked, stop_on_checkout:true, stop_on_payment:true}, report:{screenshots:$('screenshots').checked}, cleanup:{close_tabs:$('cleanup').checked, stop_profiles:$('cleanup').checked}
+    wait_profile:$('delay').value, 
+    limits:{stop_on_captcha:$('captcha').checked, stop_on_checkout:true, stop_on_payment:true}, 
+    report:{screenshots:$('screenshots').checked}, 
+    cleanup:{close_tabs:$('cleanup').checked, stop_profiles:$('cleanup').checked},
+    messaging: $('sendMessage').checked ? {
+      enabled: true,
+      text: $('messageText').value.trim() || 'Guten Tag, ich interessiere mich für dieses Produkt. Können Sie mir weitere Informationen geben?',
+      language: $('messageLanguage').value,
+      seller_count: +$('messageCount').value
+    } : { enabled: false }
   };
   $('runOutput').style.display='block'; $('runStatus').textContent=`Connecting to ${companionUrl}...`; $('mixedContentWarning').style.display='none';
   try {
