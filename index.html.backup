@@ -40,83 +40,83 @@ main{max-width:980px;margin:0 auto;padding:44px 22px 72px}.eyebrow{color:var(--a
     <div class="eyebrow">AdsPower · website QA</div>
     <button id="logoutBtn" class="secondary" type="button">Lock</button>
   </div>
-  <h1>Otto.de <span>Product Visits</span></h1>
-  <p class="intro">Automate product visits and cart interactions on Otto.de using your existing AdsPower profiles.</p>
+  <h1>Configure a <span>browser test</span></h1>
+  <p class="intro">A compact run form for testing a product journey across existing AdsPower profiles. This web page generates configuration files only and can be deployed to Vercel. The actual runner must execute locally on your Mac where AdsPower is installed, as it requires access to the AdsPower Local API at http://local.adspower.com:50325.</p>
   <form id="qaForm">
-    <section class="panel"><h2>Product Setup</h2><div class="grid">
+    <section class="panel"><h2>Target</h2><div class="grid">
       <div class="full"><label for="site">Site URL</label><input id="site" type="url" placeholder="https://www.otto.de" value="https://www.otto.de" required></div>
-      <div class="full"><label for="product">Product URL <span class="hint">optional — leave empty to search by keywords</span></label><input id="product" type="url" value="https://www.otto.de/p/goldstoff-ecksofa-mit-schlaffunktion-cord-couch-fuer-wohnzimmer-cord-ecksofa-cord-sofa-voyage-2-teile-grosser-bettkasten-S03EF02H/?variationId=S03EF02HP43N" placeholder="https://www.otto.de/p/example/"></div>
-      <div class="full"><label for="keywords">Search keywords <span class="hint">up to 3, comma-separated for variety</span></label><input id="keywords" type="text" value="cord ecksofa" placeholder="laptop gaming, gaming laptop, laptop"><div class="hint">Multiple keywords will be rotated. If Product URL is provided, keywords are ignored.</div></div>
-      <input id="position" type="hidden" value="">
-      <div class="full" style="display:flex;gap:8px;margin-top:8px">
-        <button type="button" class="secondary" onclick="saveProductConfig()" style="flex:1">💾 Save Product Config</button>
-        <button type="button" class="secondary" onclick="loadProductConfig()" style="flex:1">📂 Load Saved Config</button>
-      </div>
-    </div>    </section>
-    
-    <section class="panel"><h2>How many times to visit this product?</h2>
-      <div class="grid">
-        <div class="full">
-          <label for="totalVisits">Total visits</label>
-          <input id="totalVisits" type="number" min="1" max="100" value="9" required>
-          <div class="hint">Total number of product visits across all profiles. Default: 9 visits.</div>
-        </div>
-      </div>
-    </section>
-    
+      <div class="full"><label for="product">Product URL <span class="hint">optional — use when the test should verify a specific product</span></label><input id="product" type="url" value="https://www.otto.de/p/goldstoff-ecksofa-mit-schlaffunktion-cord-couch-fuer-wohnzimmer-cord-ecksofa-cord-sofa-voyage-2-teile-grosser-bettkasten-S03EF02H/?variationId=S03EF02HP43N" placeholder="https://www.otto.de/p/example/"></div>
+      <div class="full"><label for="keywords">Search keywords</label><input id="keywords" type="text" value="cord ecksofa" placeholder="schuhe"><div class="hint">Use one query per run. If Product URL is supplied, the runner visits it directly.</div></div>
+      <div><label for="position">Result position <span class="hint">optional — blank uses the first suitable result</span></label><input id="position" type="number" min="1" max="100" placeholder="First suitable result"></div>
+      <div><label for="visitCount">Product visits per profile</label><input id="visitCount" type="number" min="1" max="10" value="1" required></div>
+    </div></section>
     <section class="panel"><h2>Existing AdsPower profiles</h2>
       <div id="profilesContainer" class="profiles">
         <label class="checkrow"><input type="checkbox" name="profile" value="k1fgmwtq" checked> k1fgmwtq</label>
         <label class="checkrow"><input type="checkbox" name="profile" value="k1f39ocj" checked> k1f39ocj</label>
         <label class="checkrow"><input type="checkbox" name="profile" value="k1e3u6vd" checked> k1e3u6vd</label>
       </div>
-      <div class="profile-add" style="margin-top:12px;display:flex;gap:8px">
-        <input id="newProfile" type="text" placeholder="Enter profile ID" style="flex:1">
-        <button type="button" class="secondary" onclick="addProfile()">Add Profile</button>
+      <div class="profile-add">
+        <input id="newProfile" type="hidden">
+        <button type="button" class="secondary" onclick="addProfile()" hidden>Add Profile</button>
       </div>
-      <div class="hint">Select profiles to use. New profiles will be auto-selected. Visits will be distributed across selected profiles.</div>
+      <div class="hint">Add or replace IDs with existing profiles only. The runner uses existing profiles and never creates or deletes them. Profile IDs can be found in your AdsPower application.</div>
     </section>
-    
-    <section class="panel"><h2>Actions</h2>
+    <section class="panel"><h2>Interaction plan</h2><div class="grid">
+      <div><label for="minScroll">Minimum scrolls</label><input id="minScroll" type="number" min="0" max="20" value="2" required></div>
+      <div><label for="maxScroll">Maximum scrolls</label><input id="maxScroll" type="number" min="0" max="20" value="4" required></div>
+      <div><label for="delay">Wait profile</label><select id="delay"><option value="human-varied">Human-like varied waits</option><option value="standard">Standard waits</option></select></div>
+      <div><label for="repetitions">QA repetitions per day</label><input id="repetitions" type="number" min="1" max="10" value="1" required></div>
+      <div class="full switches">
+        <label><input id="cart" type="checkbox" checked> Add to cart for QA</label>
+        <label><input id="remove" type="checkbox" checked> Remove test item afterward</label>
+        <label><input id="cookies" type="checkbox" checked> Accept cookie dialogs</label>
+        <label><input id="screenshots" type="checkbox" checked> Save screenshots</label>
+        <label><input id="cleanup" type="checkbox" checked> Close tabs and stop profiles</label>
+        <label><input id="captcha" type="checkbox"> Stop on CAPTCHA/challenge</label>
+      </div>
+    </div>
+    <div class="notice">Safety defaults: no checkout, payment, account changes, or CAPTCHA solving. CAPTCHA stopping is configurable, and profiles are always cleaned up in the finally block when enabled.</div></section>
+    <section class="panel"><h2>Seller Messaging (Optional)</h2>
       <div class="grid">
-        <div><label for="minScroll">Minimum scrolls</label><input id="minScroll" type="number" min="0" max="20" value="2" required></div>
-        <div><label for="maxScroll">Maximum scrolls</label><input id="maxScroll" type="number" min="0" max="20" value="4" required></div>
-        <div class="full switches">
-          <label><input id="cart" type="checkbox" checked> Add to cart</label>
-          <label><input id="remove" type="checkbox" checked> Remove after test</label>
-          <label><input id="cookies" type="checkbox" checked> Accept cookies</label>
-          <label><input id="screenshots" type="checkbox" checked> Take screenshots</label>
+        <div class="full">
+          <label><input id="sendMessage" type="checkbox"> Send message to sellers</label>
+        </div>
+        <div class="full">
+          <label for="messageLanguage">Message Language</label>
+          <select id="messageLanguage">
+            <option value="de" selected>Deutsch (German)</option>
+            <option value="en">English</option>
+          </select>
+        </div>
+        <div class="full">
+          <label for="messageText">Message Text</label>
+          <textarea id="messageText" rows="4" placeholder="Guten Tag, ich interessiere mich für dieses Produkt. Können Sie mir weitere Informationen geben?">Guten Tag, ich interessiere mich für dieses Produkt. Können Sie mir weitere Informationen geben?</textarea>
+          <div class="hint">Message will be sent to sellers after viewing products. Default is German.</div>
+        </div>
+        <div class="full">
+          <label for="messageCount">Number of sellers to message</label>
+          <input id="messageCount" type="number" min="1" max="10" value="2">
         </div>
       </div>
     </section>
-    
-    <details class="panel" style="border:1px dashed var(--line);cursor:pointer">
-      <summary style="font-weight:700;margin-bottom:18px;list-style-position:outside;padding-left:8px">⚙️ Advanced Settings</summary>
+    <section class="panel"><h2>Companion Connection</h2>
       <div class="grid">
-        <div><label for="visitsPerRun">Visits per profile per run</label><input id="visitsPerRun" type="number" min="1" max="10" value="3" required><div class="hint">Max times one profile runs in a single execution</div></div>
-        <div><label for="visitsPerDay">Max visits per profile per day</label><input id="visitsPerDay" type="number" min="1" max="50" value="9" required><div class="hint">Daily limit per profile</div></div>
-        <div><label for="delay">Wait profile</label><select id="delay"><option value="human-varied">Human-like varied</option><option value="standard">Standard</option></select></div>
-        <div><label for="repetitions">Repetitions per day</label><input id="repetitions" type="number" min="1" max="10" value="1" required></div>
-        <div class="full switches">
-          <label><input id="cleanup" type="checkbox" checked> Close tabs and stop profiles</label>
-          <label><input id="captcha" type="checkbox"> Stop on CAPTCHA</label>
+        <div class="full">
+          <label for="companionUrl">Companion Server URL</label>
+          <input id="companionUrl" type="url" value="https://192.168.1.100:8787" placeholder="https://192.168.1.100:8787">
+          <div class="hint">Paste the HTTPS URL shown when you start the companion (e.g., https://192.168.1.159:8787)</div>
         </div>
       </div>
-    </details>
-    
-    <input id="visitCount" type="hidden" value="1">
-    <input id="sendMessage" type="hidden" value="false">
-    <input id="messageLanguage" type="hidden" value="de">
-    <textarea id="messageText" style="display:none"></textarea>
-    <input id="messageCount" type="hidden" value="0">
-    <input id="companionUrl" type="hidden" value="https://127.0.0.1:8787">
-    
+      <div id="connectionStatus" class="notice" style="display:none;margin-top:1rem"></div>
+      <div id="connectionHelp" style="margin-top:1rem;display:none"></div>
+      <div style="margin-top:1rem">
+        <button id="testConnection" class="secondary" type="button">🔌 Test Connection</button>
+      </div>
+    </section>
     <div class="actions">
-      <button id="testConnection" class="secondary" type="button">🔌 Test Connection</button>
       <button id="runTest" class="primary" type="button" disabled title="Test connection first">▶ Run via AdsPower</button>
     </div>
-    <div id="connectionStatus" class="notice" style="display:none;margin-top:1rem"></div>
-    <div id="connectionHelp" style="margin-top:1rem;display:none"></div>
     <div id="error" class="error"></div>
   </form>
   <section id="runOutput" class="output panel" aria-live="polite">
@@ -224,9 +224,6 @@ function saveFormData() {
     product: $('product').value.trim(),
     keywords: $('keywords').value.trim(),
     position: $('position').value,
-    totalVisits: $('totalVisits').value,
-    visitsPerRun: $('visitsPerRun').value,
-    visitsPerDay: $('visitsPerDay').value,
     visitCount: $('visitCount').value,
     profiles: [...document.querySelectorAll('input[name=profile]')].map(x => ({value: x.value, checked: x.checked})),
     minScroll: $('minScroll').value,
@@ -257,9 +254,6 @@ function restoreFormData() {
     $('product').value = data.product || '';
     $('keywords').value = data.keywords || '';
     $('position').value = data.position || '';
-    $('totalVisits').value = data.totalVisits || 9;
-    $('visitsPerRun').value = data.visitsPerRun || 3;
-    $('visitsPerDay').value = data.visitsPerDay || 9;
     $('visitCount').value = data.visitCount || 1;
     $('minScroll').value = data.minScroll || 2;
     $('maxScroll').value = data.maxScroll || 4;
@@ -271,7 +265,7 @@ function restoreFormData() {
     $('screenshots').checked = data.screenshots !== undefined ? data.screenshots : true;
     $('cleanup').checked = data.cleanup !== undefined ? data.cleanup : true;
     $('captcha').checked = data.captcha !== undefined ? data.captcha : false;
-    $('companionUrl').value = data.companionUrl || 'https://127.0.0.1:8787';
+    $('companionUrl').value = data.companionUrl || 'https://192.168.1.100:8787';
     $('sendMessage').checked = data.sendMessage !== undefined ? data.sendMessage : false;
     $('messageLanguage').value = data.messageLanguage || 'de';
     $('messageText').value = data.messageText || '';
@@ -335,62 +329,6 @@ function removeProfile(btn) {
     btn.closest('.checkrow').remove();
     saveFormData();
   }
-}
-
-const PRODUCT_CONFIGS_KEY = 'otto_qa_product_configs';
-
-function saveProductConfig() {
-  const productUrl = $('product').value.trim();
-  const keywords = $('keywords').value.trim();
-  
-  if (!productUrl && !keywords) {
-    showError('Please enter a Product URL or Keywords before saving.');
-    return;
-  }
-  
-  const name = prompt('Enter a name for this product configuration:', keywords || 'Unnamed Config');
-  if (!name) return;
-  
-  const configs = JSON.parse(localStorage.getItem(PRODUCT_CONFIGS_KEY) || '[]');
-  const config = {
-    id: Date.now().toString(),
-    name,
-    productUrl,
-    keywords,
-    savedAt: new Date().toISOString()
-  };
-  
-  configs.push(config);
-  localStorage.setItem(PRODUCT_CONFIGS_KEY, JSON.stringify(configs));
-  
-  alert(`✅ Saved "${name}"`);
-}
-
-function loadProductConfig() {
-  const configs = JSON.parse(localStorage.getItem(PRODUCT_CONFIGS_KEY) || '[]');
-  
-  if (configs.length === 0) {
-    alert('No saved product configurations found.');
-    return;
-  }
-  
-  const list = configs.map((c, i) => `${i + 1}. ${c.name} (${new Date(c.savedAt).toLocaleDateString()})`).join('\n');
-  const choice = prompt(`Select a configuration:\n\n${list}\n\nEnter number (1-${configs.length}):`);
-  
-  if (!choice) return;
-  
-  const index = parseInt(choice) - 1;
-  if (index < 0 || index >= configs.length) {
-    alert('Invalid selection.');
-    return;
-  }
-  
-  const config = configs[index];
-  $('product').value = config.productUrl || '';
-  $('keywords').value = config.keywords || '';
-  
-  alert(`✅ Loaded "${config.name}"`);
-  saveFormData();
 }
 
 // Form handling
