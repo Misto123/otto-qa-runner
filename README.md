@@ -1,313 +1,259 @@
-# Otto QA Runner
+# Otto.de Product Visits - QA Runner
 
-A professional QA automation tool for testing product journeys on Otto.de using AdsPower browser profiles. The tool consists of a web-based configuration generator and a local Node.js runner that integrates with AdsPower's Local API.
+> Automated browser testing tool for Otto.de product visits using AdsPower profiles
 
-## ⚠️ Security Warning: Password Gate
+## 🌐 Architecture
 
-**The web configuration form includes a client-side password gate. This is NOT real security.**
+This tool has **two components**:
 
-- The password is visible in the HTML source code (line inspection reveals it)
-- Anyone with browser DevTools can bypass the gate in seconds
-- This is a convenience gate only, meant to prevent accidental access
-- **For actual security, use:**
-  - Vercel's built-in password protection
-  - Server-side authentication
-  - Environment-based access controls
-  - IP allowlisting
+### 1. Web Interface (Vercel - Public)
+- **URL:** https://otto-qa-runner.vercel.app
+- **Password:** `rereeu`
+- Accessible by anyone in your team worldwide
+- Configure tests, view results, monitor live progress
 
-**Do not rely on this client-side gate for protecting sensitive data or production systems.**
+### 2. Companion Server (Local - Must Run Where AdsPower Is)
+- **Must run on a machine with AdsPower installed**
+- Receives test configurations from web interface
+- Controls AdsPower profiles via local API
+- Runs browser automation scripts
 
-## Architecture Overview
+## 🚀 Quick Start
 
-This project is split into two components:
+### For Team Members (Running Tests)
 
-### 1. Web Configuration Generator (`index.html`)
-- **Deployment**: Can be hosted on Vercel, Netlify, or any static hosting
-- **Purpose**: Generates and downloads JSON configuration files
-- **Capabilities**: 
-  - Create test configurations with a polished UI
-  - Save/restore settings in browser localStorage
-  - Export JSON configuration files
-- **Limitations**: 
-  - **Cannot start browsers or execute tests**
-  - **Cannot access AdsPower Local API** (runs at `http://local.adspower.com:50325` which is only accessible locally)
-  - Only generates configurations for the runner
+1. **Start Companion Server** (on machine with AdsPower)
+   ```bash
+   cd otto-qa-runner
+   HTTPS=true node companion/server.cjs
+   ```
+   
+   You'll see:
+   ```
+   ✅ Companion listening on https://0.0.0.0:8787
+   📱 Remote device access URLs:
+      https://192.168.x.x:8787
+   ```
 
-### 2. Local Runner (`runner/otto-runner.cjs`)
-- **Execution**: Must run locally on the same Mac where AdsPower is installed
-- **Purpose**: Executes QA tests using existing AdsPower profiles
-- **Requirements**:
-  - AdsPower application running locally
-  - Node.js 18+ installed
-  - Access to `http://local.adspower.com:50325`
+2. **Open Web Interface**
+   - Go to: https://otto-qa-runner.vercel.app
+   - Enter password: `rereeu`
 
-## Why the Runner Must Execute Locally
+3. **Configure Connection**
+   - **Local testing:** Use `https://127.0.0.1:8787`
+   - **Remote testing:** Use `https://YOUR_IP:8787` (from step 1)
+   - Click "Test Connection"
+   - Accept certificate warning if prompted
 
-The AdsPower Local API runs at `http://local.adspower.com:50325`, which:
-- Only responds to requests from `localhost` (127.0.0.1)
-- Cannot be accessed from external servers or deployed environments
-- Requires the AdsPower application to be running on the same machine
+4. **Run Tests**
+   - Select profiles (200 available)
+   - Enter product URL or search keywords
+   - Configure scroll, cart actions, etc.
+   - Click "Run via AdsPower"
 
-**This means:**
-- ✅ The web page (index.html) can be deployed to Vercel for easy configuration generation
-- ❌ The runner (otto-runner.cjs) cannot run on Vercel or any remote server
-- ✅ The runner must execute on your local Mac where AdsPower is installed
+## 📋 Use Cases
 
-## Installation
+### Case 1: Local Testing (Developer's Machine)
+```
+Developer's Machine:
+  ├─ AdsPower (running)
+  ├─ Companion Server (localhost:8787)
+  └─ Browser → https://otto-qa-runner.vercel.app → connects to localhost
+```
 
-### Prerequisites
-1. **AdsPower Desktop** installed and running on your Mac
-2. **Node.js 18+** installed ([Download](https://nodejs.org/))
-3. **Existing AdsPower profiles** (the runner uses existing profiles only, never creates/deletes them)
+### Case 2: Remote Testing (Team Member → QA Server)
+```
+Team Member's Laptop (anywhere in world):
+  └─ Browser → https://otto-qa-runner.vercel.app
 
-### Setup
+      ↓ (connects over internet)
 
+QA Server (with public IP):
+  ├─ AdsPower (running)
+  ├─ Companion Server (public IP:8787)
+  └─ 200 profiles ready
+```
+
+### Case 3: Multiple Team Members → Same Server
+```
+Team Member A (USA) ─┐
+Team Member B (EU)  ─┼→ https://otto-qa-runner.vercel.app
+Team Member C (Asia) ─┘
+                       ↓
+                   QA Server (Germany)
+                   https://qa-server.company.com:8787
+```
+
+## 🔒 Security Notes
+
+### HTTPS Certificate
+The companion uses a **self-signed certificate** for HTTPS:
+- **First time:** Browser will show security warning → Click "Accept" or "Proceed"
+- **Why HTTPS?** Vercel (HTTPS) → Companion must also use HTTPS (mixed content policy)
+- **Production:** Use proper SSL certificate (Let's Encrypt, etc.)
+
+### Firewall / Network
+For **remote access**, ensure:
+- Port `8787` is open on the companion machine
+- Firewall allows incoming connections
+- Use VPN or restrict IP access for security
+
+## 📦 Companion Server Setup
+
+### Local Development
 ```bash
-# Clone or download this repository
+# Clone repo
+git clone https://github.com/Misto123/otto-qa-runner.git
 cd otto-qa-runner
 
 # Install dependencies
 npm install
 
-# Verify the runner syntax
-npm run validate
+# Start companion
+HTTPS=true node companion/server.cjs
 ```
 
-## Local companion: Run this test locally
-
-The deployed page can send a validated configuration to a companion running on the same Mac. It cannot run AdsPower from Vercel directly.
-
+### Production Server
 ```bash
+# Install Node.js 18+
+curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
+sudo apt-get install -y nodejs
+
+# Clone and setup
+git clone https://github.com/Misto123/otto-qa-runner.git
+cd otto-qa-runner
 npm install
-npm run companion
-# keep this process running, then use Run this test locally on the web page
+
+# Run with PM2 (auto-restart)
+npm install -g pm2
+pm2 start companion/server.cjs --name otto-companion --env HTTPS=true
+pm2 save
+pm2 startup
 ```
 
-The companion listens only on `127.0.0.1:8787`, accepts requests only from the deployed page or localhost, and never accepts credentials. It runs existing AdsPower profiles through CDP, stops on challenges, and cleans up profiles in the runner's `finally` path.
-## Usage
-
-### Step 1: Generate Configuration
-
-**Option A: Use the deployed web page** (recommended for config generation)
-
-1. Visit the deployed Vercel page
-2. Fill in your test parameters:
-   - Site URL (e.g., `https://www.otto.de`)
-   - Search keywords
-   - Existing AdsPower profile IDs
-   - Scroll settings, wait profiles, etc.
-3. Click "Generate test configuration"
-4. Download the JSON file
-
-**Option B: Run locally with live testing** (avoids mixed content issues)
+### Docker Deployment (Optional)
+```dockerfile
+FROM node:18-alpine
+WORKDIR /app
+COPY package*.json ./
+RUN npm ci --production
+COPY . .
+ENV HTTPS=true
+EXPOSE 8787
+CMD ["node", "companion/server.cjs"]
+```
 
 ```bash
-# Start both the configurator and companion
-npm run dev
-
-# Or start them separately in two terminals:
-npm run serve      # Configurator at http://localhost:3000
-npm run companion  # Companion API at http://127.0.0.1:8787
+docker build -t otto-qa-companion .
+docker run -d -p 8787:8787 -e HTTPS=true otto-qa-companion
 ```
 
-Then open http://localhost:3001 and click "Run this test locally" to execute tests directly through AdsPower.
+## 🔧 Configuration
 
-**Why local HTTP?** Browsers block HTTPS pages (like Vercel) from connecting to local HTTP servers (mixed content security). Running the configurator locally on HTTP avoids this limitation.
-
-### Step 2: Run Tests Locally
+### Companion Server Environment Variables
 ```bash
-# Run with your configuration file
-npm run runner sample-config.json
-
-# Or specify a custom output report path
-npm run runner my-config.json results/test-run-1.json
-
-# Or run directly with node
-node runner/otto-runner.cjs sample-config.json output-report.json
+HTTPS=true          # Enable HTTPS (required for Vercel app)
+PORT=8787          # Port (default: 8787)
+HOST=0.0.0.0       # Listen on all interfaces (for remote access)
 ```
 
-### Configuration Format
+### Web Interface
+All configuration is done through the UI:
+- Companion URL (can be localhost or remote server)
+- Profile selection (200 profiles)
+- Product URL or search keywords
+- Scroll behavior, cart actions
+- Screenshots, duration estimates
 
-See `sample-config.json` for a complete example. Key fields:
+## 📊 Features
 
-```json
-{
-  "site_url": "https://www.otto.de",
-  "profiles": ["k1fgmwtq", "k1f39ocj", "k1e3u6vd"],
-  "search": {
-    "keywords": "schuhe",
-    "result_position": 4
-  },
-  "actions": {
-    "add_to_cart": false,
-    "remove_after_test": true,
-    "accept_cookies": true,
-    "scroll": { "enabled": true, "min": 2, "max": 4 }
-  },
-  "wait_profile": "human-varied",
-  "limits": {
-    "stop_on_captcha": true,
-    "stop_on_checkout": true,
-    "stop_on_payment": true
-  }
-}
-```
+✅ **200 AdsPower Profiles** - Loaded from API  
+✅ **Search or Direct URL** - Flexible product selection  
+✅ **Human-like Behavior** - Random waits, varied scrolling  
+✅ **Cookie Acceptance** - Automatic dialog handling  
+✅ **Cart Actions** - Add/remove from cart (QA only)  
+✅ **Screenshots** - Capture at each step  
+✅ **Live Logs** - Real-time progress updates  
+✅ **Duration Estimates** - ~45s per product visit  
+✅ **Parallel Tests** - Multiple profiles simultaneously  
+✅ **Auto Cleanup** - Tabs closed, profiles stopped  
 
-## How It Works
+## 🐛 Troubleshooting
 
-### Runner Execution Flow
+### "Cannot connect to companion"
+1. Is companion server running? Check terminal
+2. Is URL correct in web interface?
+3. Firewall blocking port 8787?
+4. For HTTPS: Accept certificate first (open URL in browser)
 
-1. **Validation**: Validates configuration file format and required fields
-2. **Profile Management**: 
-   - Uses only existing profile IDs from the config
-   - Starts each profile via AdsPower Local API
-   - Connects to the browser via Chrome DevTools Protocol (CDP)
-3. **Test Execution** (per profile):
-   - Opens a new tab
-   - Navigates to `site_url`
-   - Accepts cookie consent dialogs
-   - Searches for keywords using robust selectors including `input[placeholder*="Wonach suchst du"]`
-   - Performs varied scrolling (random between min/max)
-   - Selects the Nth product from search results
-   - Visits the product page
-   - Optionally adds to cart (QA only, if configured)
-   - Optionally removes from cart afterward (cleanup)
-   - Takes screenshots at each step (if enabled)
-   - **Stops immediately if CAPTCHA/challenge detected**
-   - **Never performs checkout, payment, or credential entry**
-4. **Cleanup**: 
-   - Closes tabs
-   - Disconnects browser
-   - Stops each profile (in `finally` block, always executes)
-5. **Concurrency**: 
-   - Runs up to 3 profiles concurrently (configurable in `MAX_CONCURRENT_WORKERS`)
-   - Uses a bounded worker pool for efficient resource usage
-6. **Reporting**: 
-   - Captures detailed results for each profile
-   - Writes comprehensive JSON report with timestamps, steps, errors, and screenshots
+### "No product items found"
+1. Check if search keywords return results on otto.de
+2. Try with direct product URL instead
+3. Check logs for detailed error
 
-## Safety Features
+### "Profile start failed"
+1. Is AdsPower running on the same machine as companion?
+2. Is profile ID correct? Check AdsPower UI
+3. Check AdsPower local API: `http://local.adspower.com:50325/api/v1/user/list`
 
-The runner implements multiple safety guardrails:
+### Certificate Warnings
+**Expected behavior** with self-signed certificates:
+1. First connection: Browser warns about certificate
+2. Click "Advanced" → "Proceed to..." or "Accept Risk"
+3. Certificate is saved, future connections work
 
-- ✅ Uses existing profiles only (never creates or deletes)
-- ✅ Stops on CAPTCHA/security challenges
-- ✅ Never performs checkout or payment actions
-- ✅ Never enters credentials or personal information
-- ✅ Always stops profiles in `finally` block (guaranteed cleanup)
-- ✅ Clear error handling with detailed logging
-- ✅ URL validation to prevent invalid targets
-- ✅ Optional cart add/remove for QA testing only
+**For production:** Use proper SSL certificate from Let's Encrypt
 
-## Output
+## 📂 Project Structure
 
-### Console Output
-Real-time progress updates showing:
-- Profile start/stop events
-- Navigation and interaction steps
-- CAPTCHA detection warnings
-- Error messages and failures
-- Final test summary
-
-### JSON Report
-Generated at the specified output path with:
-```json
-{
-  "test_name": "Otto QA Run",
-  "started_at": "2026-08-21T10:30:00.000Z",
-  "completed_at": "2026-08-21T10:35:00.000Z",
-  "duration_seconds": 300,
-  "summary": {
-    "total": 3,
-    "completed": 2,
-    "failed": 0,
-    "stopped_captcha": 1
-  },
-  "results": [
-    {
-      "profile_id": "k1fgmwtq",
-      "status": "completed",
-      "product_url": "https://www.otto.de/p/example/",
-      "steps": [...],
-      "screenshots": [...]
-    }
-  ]
-}
-```
-
-### Screenshots
-If enabled, saved to `screenshots/` directory with naming format:
-```
-{profile_id}_{step}_{timestamp}.png
-```
-
-Examples:
-- `k1fgmwtq_homepage_1724252400000.png`
-- `k1fgmwtq_search_results_1724252405000.png`
-- `k1fgmwtq_product_page_1724252410000.png`
-
-## Troubleshooting
-
-### "AdsPower API error"
-- Ensure AdsPower is running on your Mac
-- Check that profiles exist and are not already in use
-- Verify `http://local.adspower.com:50325` is accessible
-
-### "Could not find search input field"
-- The site structure may have changed
-- Check console output for attempted selectors
-- Update selectors in `runner/otto-runner.cjs` if needed
-
-### "CAPTCHA detected"
-- This is expected behavior when stop_on_captcha is enabled
-- The runner will stop the test and mark it as `stopped_captcha`
-- Review the configuration or site access patterns
-
-### Profile fails to start
-- Check that the profile ID is correct
-- Ensure the profile is not already running
-- Try starting the profile manually in AdsPower first
-
-## Development
-
-### Project Structure
 ```
 otto-qa-runner/
-├── index.html              # Web configuration generator (deployable)
+├── index.html              # Web UI (deployed to Vercel)
+├── companion/
+│   ├── server.cjs          # Companion API server
+│   └── cert/               # Self-signed certificates
 ├── runner/
-│   └── otto-runner.cjs     # Local test runner (local execution only)
-├── package.json            # Dependencies and scripts
-├── sample-config.json      # Example configuration
-├── screenshots/            # Generated screenshots (created at runtime)
+│   └── otto-runner.cjs     # Browser automation logic
+├── screenshots/            # Captured screenshots
 └── README.md              # This file
 ```
 
-### Scripts
-```bash
-npm run validate    # Check runner syntax
-npm run runner      # Run tests (requires config file argument)
-npm test           # Alias for validate
+## 🎯 Workflow Summary
+
+```
+1. Team member opens: https://otto-qa-runner.vercel.app
+2. Enters companion URL: https://qa-server.company.com:8787
+3. Tests connection
+4. Configures test (profiles, product, actions)
+5. Clicks "Run via AdsPower"
+6. Web app sends config to companion server
+7. Companion controls AdsPower → Opens browsers → Runs test
+8. Live logs stream back to web interface
+9. Results displayed in web UI
+10. Screenshots saved on companion server
 ```
 
-### Extending the Runner
-The runner uses modular functions that can be customized:
-- `acceptCookies()`: Add more cookie dialog selectors
-- `searchKeywords()`: Update search input selectors
-- `selectNthProduct()`: Modify product link detection
-- `addToCart()` / `removeFromCart()`: Update cart button selectors
-- `detectCAPTCHA()`: Add more CAPTCHA detection patterns
+## 🚀 Production Checklist
 
-## License
+- [ ] Companion server running on machine with AdsPower
+- [ ] Port 8787 accessible (firewall configured)
+- [ ] HTTPS enabled (`HTTPS=true`)
+- [ ] SSL certificate accepted on all client browsers
+- [ ] AdsPower profiles loaded (200+)
+- [ ] Web interface accessible: https://otto-qa-runner.vercel.app
+- [ ] Password distributed to team: `rereeu`
+- [ ] Team knows companion URL (IP or domain)
+- [ ] Screenshots directory writable
+- [ ] Logs monitored (companion server output)
 
-MIT
+## 📞 Support
 
-## Disclaimer
+For issues or questions, check:
+- Companion server logs (terminal output)
+- Browser console (F12 → Console)
+- Screenshots directory for captured images
+- GitHub issues: https://github.com/Misto123/otto-qa-runner
 
-This tool is for QA testing purposes only. It:
-- Does not bypass CAPTCHAs or security measures
-- Does not manipulate traffic or obscure identities
-- Does not perform actual purchases or payments
-- Respects website terms of service
-- Stops immediately when challenged
+---
 
-Users are responsible for ensuring their testing complies with all applicable terms of service and regulations.
+**Made with ❤️ for automated QA testing**
