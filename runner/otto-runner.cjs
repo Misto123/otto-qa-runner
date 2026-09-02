@@ -21,9 +21,11 @@ const path = require('path');
 const puppeteer = require('puppeteer-core');
 
 // Configuration constants
-const ADSPOWER_API_BASE = 'http://local.adspower.com:50325';
+const ADSPOWER_API_BASE = process.env.ADSPOWER_API_BASE || 'http://local.adspower.com:50325';
 const MAX_CONCURRENT_WORKERS = 3;
 const DEFAULT_TIMEOUT = 30000;
+
+console.log(`Using AdsPower API: ${ADSPOWER_API_BASE}`);
 
 // Wait profiles for varied timing
 const WAIT_PROFILES = {
