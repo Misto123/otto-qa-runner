@@ -20,12 +20,20 @@ const fs = require('fs');
 const path = require('path');
 const puppeteer = require('puppeteer-core');
 
+// Check if Remote Browser API is configured
+const remoteBrowserClient = require('./remote-browser-client.cjs');
+const USE_REMOTE_BROWSER = remoteBrowserClient.isConfigured();
+
 // Configuration constants
 const ADSPOWER_API_BASE = process.env.ADSPOWER_API_BASE || 'http://local.adspower.com:50325';
 const MAX_CONCURRENT_WORKERS = 3;
 const DEFAULT_TIMEOUT = 30000;
 
-console.log(`Using AdsPower API: ${ADSPOWER_API_BASE}`);
+if (USE_REMOTE_BROWSER) {
+  console.log(`✅ Using Remote Browser API: ${remoteBrowserClient.REMOTE_BROWSER_API_URL}`);
+} else {
+  console.log(`Using local AdsPower API: ${ADSPOWER_API_BASE}`);
+}
 
 // Wait profiles for varied timing
 const WAIT_PROFILES = {
@@ -123,33 +131,53 @@ async function adsPowerAPI(endpoint, params = {}) {
 }
 
 /**
- * Start an AdsPower profile and get CDP connection details
+ * Start an AdsPower profile and get CDP connection details (local or remote)
  */
 async function startProfile(profileId) {
   console.log(`[${profileId}] Starting profile...`);
-  const result = await adsPowerAPI('/api/v1/browser/start', {
-    user_id: profileId,
-    open_tabs: '0'
-  });
   
-  if (!result.data || !result.data.ws || !result.data.ws.puppeteer) {
-    throw new Error(`Failed to start profile ${profileId}: No CDP URL returned`);
+  if (USE_REMOTE_BROWSER) {
+    // Use Remote Browser API
+    const browserData = await remoteBrowserClient.startRemoteBrowser(profileId);
+    return {
+      browserId: browserData.browserId,
+      debugPort: null,
+      wsUrl: browserData.puppeteerUrl,
+      webdriver: null
+    };
+  } else {
+    // Use local AdsPower API
+    const result = await adsPowerAPI('/api/v1/browser/start', {
+      user_id: profileId,
+      open_tabs: '0'
+    });
+    
+    if (!result.data || !result.data.ws || !result.data.ws.puppeteer) {
+      throw new Error(`Failed to start profile ${profileId}: No CDP URL returned`);
+    }
+    
+    return {
+      browserId: profileId,
+      debugPort: result.data.debug_port,
+      wsUrl: result.data.ws.puppeteer,
+      webdriver: result.data.webdriver
+    };
   }
-  
-  return {
-    debugPort: result.data.debug_port,
-    wsUrl: result.data.ws.puppeteer,
-    webdriver: result.data.webdriver
-  };
 }
 
 /**
- * Stop an AdsPower profile
+ * Stop an AdsPower profile (local or remote)
  */
-async function stopProfile(profileId) {
+async function stopProfile(profileId, browserId) {
   console.log(`[${profileId}] Stopping profile...`);
   try {
-    await adsPowerAPI('/api/v1/browser/stop', { user_id: profileId });
+    if (USE_REMOTE_BROWSER) {
+      // Use Remote Browser API
+      await remoteBrowserClient.stopRemoteBrowser(browserId || profileId);
+    } else {
+      // Use local AdsPower API
+      await adsPowerAPI('/api/v1/browser/stop', { user_id: profileId });
+    }
     console.log(`[${profileId}] Profile stopped successfully`);
   } catch (err) {
     console.error(`[${profileId}] Error stopping profile:`, err.message);
@@ -632,6 +660,7 @@ async function runProfileTest(profileId, config, outputDir) {
   
   let browser = null;
   let page = null;
+  let browserId = null;
   const waits = WAIT_PROFILES[config.wait_profile];
   
   try {
@@ -639,6 +668,7 @@ async function runProfileTest(profileId, config, outputDir) {
     
     // Start profile
     const connection = await startProfile(profileId);
+    browserId = connection.browserId; // Store browser ID for cleanup
     result.steps.push({ step: 'profile_started', timestamp: new Date().toISOString() });
     
     // Connect via CDP
@@ -816,7 +846,7 @@ async function runProfileTest(profileId, config, outputDir) {
     
     // Stop profile if configured
     if (config.cleanup.stop_profiles) {
-      await stopProfile(profileId);
+      await stopProfile(profileId, browserId);
     }
   }
   
