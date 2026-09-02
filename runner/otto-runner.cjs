@@ -309,38 +309,52 @@ async function selectNthProduct(page, position, waits) {
   const requestedPosition = position || 1;
   console.log(`  → Looking for product at position ${requestedPosition}`);
   
+  // Wait for search results to load
+  await sleep(waits.long());
+  
   const productSelectors = [
     'a[href*="/p/"]',
     'a[data-testid*="product"]',
     'article a',
     '.product a',
     '[class*="product"] a',
-    'a[class*="ProductTile"]'
+    'a[class*="ProductTile"]',
+    '[data-qa*="product"] a',
+    'div[class*="Product"] a'
   ];
-  
-  await sleep(waits.medium());
   
   for (const selector of productSelectors) {
     try {
       const links = await page.$$(selector);
       
-      if (links.length >= requestedPosition) {
-        const targetLink = links[requestedPosition - 1];
-        const href = await targetLink.evaluate(el => el.href);
-        
-        if (href && href.includes('/p/')) {
-          console.log(`  → Found product link at position ${requestedPosition}: ${href}`);
-          await targetLink.click();
-          await sleep(waits.long());
-          return href;
+      // Filter links to only those with /p/ in href
+      const productLinks = [];
+      for (const link of links) {
+        try {
+          const href = await link.evaluate(el => el.href);
+          if (href && href.includes('/p/')) {
+            productLinks.push({ link, href });
+          }
+        } catch (e) {
+          // Skip this link
         }
       }
+      
+      console.log(`  → Found ${productLinks.length} product links with selector: ${selector}`);
+      
+      if (productLinks.length >= requestedPosition) {
+        const target = productLinks[requestedPosition - 1];
+        console.log(`  → Clicking product at position ${requestedPosition}: ${target.href}`);
+        await target.link.click();
+        await sleep(waits.long());
+        return target.href;
+      }
     } catch (err) {
-      // Continue to next selector
+      console.log(`  → Selector ${selector} failed: ${err.message}`);
     }
   }
   
-  throw new Error(`Could not find product at position ${requestedPosition}`);
+  throw new Error(`Could not find product at position ${requestedPosition}. Try with a different keyword or check if search results loaded.`);
 }
 
 /**
@@ -667,36 +681,41 @@ async function runProfileTest(profileId, config, outputDir) {
       result.steps.push({ step: 'cookies_accepted', timestamp: new Date().toISOString() });
     }
     
-    // Search keywords, unless a direct product URL was supplied.
+    // Search keywords or go directly to product URL
+    let productUrl;
     if (config.product_url) {
+      // Direct product URL - skip search
       await page.goto(config.product_url, { waitUntil: 'domcontentloaded' });
       await sleep(waits.medium());
+      productUrl = config.product_url;
       result.steps.push({ step: 'product_direct_loaded', timestamp: new Date().toISOString(), url: config.product_url });
     } else {
+      // Search flow
       await searchKeywords(page, config.search.keywords, waits);
       result.steps.push({ step: 'search_completed', timestamp: new Date().toISOString() });
+      
+      if (config.report.screenshots) {
+        const screenshot = await takeScreenshot(page, profileId, 'search_results', outputDir);
+        if (screenshot) result.screenshots.push(screenshot);
+      }
+      
+      // Scroll search results
+      if (config.actions.scroll.enabled) {
+        await performScrolling(
+          page,
+          config.actions.scroll.min,
+          config.actions.scroll.max,
+          waits
+        );
+        result.steps.push({ step: 'scrolling_completed', timestamp: new Date().toISOString() });
+      }
+      
+      // Select Nth product from search results
+      productUrl = await selectNthProduct(page, config.search.result_position, waits);
+      result.steps.push({ step: 'product_selected', timestamp: new Date().toISOString(), url: productUrl });
     }
     
-    if (config.report.screenshots) {
-      const screenshot = await takeScreenshot(page, profileId, 'search_results', outputDir);
-      if (screenshot) result.screenshots.push(screenshot);
-    }
-    
-    // Scroll search results
-    if (config.actions.scroll.enabled) {
-      await performScrolling(
-        page,
-        config.actions.scroll.min,
-        config.actions.scroll.max,
-        waits
-      );
-      result.steps.push({ step: 'scrolling_completed', timestamp: new Date().toISOString() });
-    }
-    
-    // Select Nth product when searching; otherwise use the supplied URL.
-    const productUrl = config.product_url || await selectNthProduct(page, config.search.result_position, waits);
     result.product_url = productUrl;
-    result.steps.push({ step: 'product_selected', timestamp: new Date().toISOString(), url: productUrl });
     
     if (config.report.screenshots) {
       const screenshot = await takeScreenshot(page, profileId, 'product_page', outputDir);
