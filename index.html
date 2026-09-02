@@ -308,18 +308,13 @@ main{max-width:980px;margin:0 auto;padding:44px 22px 72px}.eyebrow{color:var(--a
     <input id="messageLanguage" type="hidden" value="de">
     <textarea id="messageText" style="display:none"></textarea>
     <input id="messageCount" type="hidden" value="0">
-    
-    <div class="full">
-      <label for="companionUrl">Companion Server URL</label>
-      <input id="companionUrl" type="url" placeholder="https://your-server.com:8787" value="https://127.0.0.1:8787" required>
-      <div class="hint">Enter the URL of the companion server. If running locally: <code>https://127.0.0.1:8787</code><br>The companion must be running on a machine with AdsPower installed.</div>
-    </div>
+    <input id="companionUrl" type="hidden" value="https://127.0.0.1:8787">
     
     <div class="actions">
-      <button id="testConnection" class="secondary" type="button">🔌 Test Connection</button>
-      <button id="runTest" class="primary" type="button" disabled title="Test connection first">▶ Run via AdsPower</button>
+      <button id="runTest" class="primary" type="button">▶ Run via AdsPower</button>
     </div>
-    <div class="hint" style="margin-top:8px"><strong>Setup:</strong> 1. Start companion: <code>HTTPS=true node companion/server.cjs</code><br>2. Test connection<br>3. Run tests</div>
+    <div id="connectionStatus" class="notice" style="display:none;margin-top:1rem"></div>
+    <div id="connectionHelp" style="margin-top:1rem;display:none"></div>
     <div id="connectionStatus" class="notice" style="display:none;margin-top:1rem"></div>
     <div id="connectionHelp" style="margin-top:1rem;display:none"></div>
     <div id="error" class="error"></div>
@@ -787,6 +782,21 @@ $('companionUrl').addEventListener('change', () => {
 
 async function runLocalTest() {
   if (!validateForm()) return;
+  
+  // Auto-connect if button is disabled (companion not connected yet)
+  if ($('runTest').disabled) {
+    $('runTest').textContent = '⏳ Connecting...';
+    await autoConnect();
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    
+    if ($('runTest').disabled) {
+      showError('Cannot connect to companion server. Please start it first.');
+      $('runTest').textContent = '▶ Run via AdsPower';
+      return;
+    }
+    $('runTest').textContent = '▶ Run via AdsPower';
+  }
+  
   const companionUrl = $('companionUrl').value.trim() || 'https://127.0.0.1:8787';
   
   const profiles = [...document.querySelectorAll('input[name=profile]:checked')].map(x => x.value);
@@ -874,7 +884,61 @@ $('qaForm').addEventListener('change', saveFormData);
 window.addEventListener('DOMContentLoaded', () => {
   showLoginScreen();
   restoreFormData();
+  
+  // Auto-connect to companion server on load (after login)
+  setTimeout(() => {
+    if (!document.getElementById('loginScreen').style.display || 
+        document.getElementById('loginScreen').style.display === 'none') {
+      autoConnect();
+    }
+  }, 500);
 });
+
+// Auto-connect to companion (silent, non-blocking)
+async function autoConnect() {
+  const companionUrl = $('companionUrl').value.trim();
+  
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 3000); // 3s timeout
+    
+    const response = await fetch(`${companionUrl}/health`, {
+      signal: controller.signal
+    });
+    clearTimeout(timeout);
+    
+    if (!response.ok) throw new Error('Not available');
+    const data = await response.json();
+    
+    if (data.ok && data.service === 'otto-qa-companion') {
+      // Connected successfully - enable run button silently
+      $('runTest').disabled = false;
+      $('runTest').title = '';
+      console.log('✅ Auto-connected to companion server');
+    }
+  } catch (error) {
+    // Connection failed - show setup instructions
+    $('runTest').disabled = true;
+    $('runTest').title = 'Start companion server first';
+    $('connectionHelp').style.display = 'block';
+    $('connectionHelp').innerHTML = `
+      <div style="background:var(--panel2);padding:1.5rem;border-radius:12px;border-left:4px solid var(--accent)">
+        <h3 style="margin:0 0 1rem;color:var(--accent);font-size:1.1rem">🚀 First Time Setup</h3>
+        <p style="margin:0 0 1rem;line-height:1.6">The companion server is not running. Install auto-start to run it automatically:</p>
+        <div style="background:var(--bg);padding:1rem;border-radius:8px;font-family:monospace;margin:0.5rem 0">
+          <code style="color:var(--good)">cd /Users/northsea/ClaudeProjects/otto-qa-runner</code><br>
+          <code style="color:var(--good)">bash scripts/install-autostart.sh</code>
+        </div>
+        <p style="margin:1rem 0 0.5rem;font-size:0.9rem;color:var(--muted)">Or start manually just once:</p>
+        <div style="background:var(--bg);padding:1rem;border-radius:8px;font-family:monospace">
+          <code style="color:var(--accent)">bash scripts/start-all.sh</code>
+        </div>
+        <p style="margin:1rem 0 0;font-size:0.85rem;color:var(--muted)">After installation, the companion will start automatically on login.</p>
+      </div>
+    `;
+    console.log('⚠️ Companion server not available');
+  }
+}
 </script>
 </body>
 </html>
