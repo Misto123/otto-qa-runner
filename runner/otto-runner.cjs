@@ -673,8 +673,17 @@ async function runProfileTest(profileId, config, outputDir) {
     
     // Connect via CDP
     console.log(`[${profileId}] Connecting to browser via CDP...`);
+    
+    // For Remote Browser API, add API key to WebSocket URL
+    let wsUrl = connection.wsUrl;
+    if (USE_REMOTE_BROWSER && process.env.REMOTE_BROWSER_API_KEY) {
+      // Add API key as query parameter if not already present
+      const separator = wsUrl.includes('?') ? '&' : '?';
+      wsUrl = `${wsUrl}${separator}api_key=${process.env.REMOTE_BROWSER_API_KEY}`;
+    }
+    
     browser = await puppeteer.connect({
-      browserWSEndpoint: connection.wsUrl,
+      browserWSEndpoint: wsUrl,
       defaultViewport: null
     });
     

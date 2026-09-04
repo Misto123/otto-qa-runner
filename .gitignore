@@ -7,3 +7,4 @@ reports/
 screenshots/
 .DS_Store
 certs/
+.env
