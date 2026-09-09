@@ -50,13 +50,16 @@ async function startRemoteBrowser(profileId, timeout = 1800000) {
     })
   });
   
+  // Add API key to WebSocket URL as per Remote Browser API docs
+  const authenticatedUrl = `${data.puppeteerUrl}${data.puppeteerUrl.includes('?') ? '&' : '?'}x_api_key=${REMOTE_BROWSER_API_KEY}`;
+  
   console.log(`  → Remote browser started: ${data.browserId}`);
-  console.log(`  → Puppeteer URL: ${data.puppeteerUrl}`);
+  console.log(`  → Puppeteer URL: ${authenticatedUrl.substring(0, 50)}...`);
   
   return {
     browserId: data.browserId,
-    puppeteerUrl: data.puppeteerUrl,
-    ws: { puppeteer: data.puppeteerUrl },
+    puppeteerUrl: authenticatedUrl,
+    ws: { puppeteer: authenticatedUrl },
     timeout: data.timeout,
     remainingTime: data.remainingTime
   };
