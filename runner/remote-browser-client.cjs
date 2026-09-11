@@ -49,15 +49,16 @@ async function startRemoteBrowser(profileId, provider = 'adspower', timeout = 18
   
   // Add profileId or proxy based on provider
   if (provider === 'bas') {
-    // BAS: use rotating proxy, profileId optional
+    // BAS: use rotating proxy, profileId optional (numeric)
     body.proxy = getNextBASProxy();
-    if (profileId && typeof profileId === 'number') {
-      body.profileId = profileId;
+    if (profileId !== null && profileId !== undefined) {
+      // Ensure profileId is a number for BAS
+      body.profileId = typeof profileId === 'string' ? parseInt(profileId, 10) : profileId;
     }
     console.log(`  → Using BAS proxy: ${body.proxy.substring(0, 40)}...`);
   } else {
-    // AdsPower: profileId required
-    body.profileId = profileId;
+    // AdsPower: profileId required (string)
+    body.profileId = String(profileId);
   }
   
   const data = await makeRequest('/browsers/start', {
