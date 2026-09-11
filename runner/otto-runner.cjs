@@ -133,17 +133,18 @@ async function adsPowerAPI(endpoint, params = {}) {
 /**
  * Start an AdsPower profile and get CDP connection details (local or remote)
  */
-async function startProfile(profileId) {
-  console.log(`[${profileId}] Starting profile...`);
+async function startProfile(profileId, provider = 'adspower') {
+  console.log(`[${profileId}] Starting profile (provider: ${provider})...`);
   
   if (USE_REMOTE_BROWSER) {
     // Use Remote Browser API
-    const browserData = await remoteBrowserClient.startRemoteBrowser(profileId);
+    const browserData = await remoteBrowserClient.startRemoteBrowser(profileId, provider);
     return {
       browserId: browserData.browserId,
       debugPort: null,
       wsUrl: browserData.puppeteerUrl,
-      webdriver: null
+      webdriver: null,
+      provider: provider
     };
   } else {
     // Use local AdsPower API
@@ -168,12 +169,12 @@ async function startProfile(profileId) {
 /**
  * Stop an AdsPower profile (local or remote)
  */
-async function stopProfile(profileId, browserId) {
-  console.log(`[${profileId}] Stopping profile...`);
+async function stopProfile(profileId, browserId, provider = 'adspower') {
+  console.log(`[${profileId}] Stopping profile (provider: ${provider})...`);
   try {
     if (USE_REMOTE_BROWSER) {
       // Use Remote Browser API
-      await remoteBrowserClient.stopRemoteBrowser(browserId || profileId);
+      await remoteBrowserClient.stopRemoteBrowser(browserId || profileId, provider);
     } else {
       // Use local AdsPower API
       await adsPowerAPI('/api/v1/browser/stop', { user_id: profileId });
@@ -667,8 +668,10 @@ async function runProfileTest(profileId, config, outputDir) {
     console.log(`\n[${profileId}] Starting QA test`);
     
     // Start profile
-    const connection = await startProfile(profileId);
+    const provider = config.provider || 'adspower';
+    const connection = await startProfile(profileId, provider);
     browserId = connection.browserId; // Store browser ID for cleanup
+    const connectionProvider = connection.provider || provider;
     result.steps.push({ step: 'profile_started', timestamp: new Date().toISOString() });
     
     // Connect via CDP
@@ -855,7 +858,7 @@ async function runProfileTest(profileId, config, outputDir) {
     
     // Stop profile if configured
     if (config.cleanup.stop_profiles) {
-      await stopProfile(profileId, browserId);
+      await stopProfile(profileId, browserId, connectionProvider);
     }
   }
   

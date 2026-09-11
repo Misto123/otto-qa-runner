@@ -5,6 +5,7 @@
 
 const REMOTE_BROWSER_API_URL = process.env.REMOTE_BROWSER_API_URL || 'http://95.217.224.154:3000';
 const REMOTE_BROWSER_API_KEY = process.env.REMOTE_BROWSER_API_KEY;
+const { getNextBASProxy } = require('./bas-proxies.cjs');
 
 if (!REMOTE_BROWSER_API_KEY) {
   console.warn('⚠️  REMOTE_BROWSER_API_KEY not set. Remote browser features will not work.');
@@ -37,17 +38,31 @@ async function makeRequest(endpoint, options = {}) {
 /**
  * Start browser on Remote Browser API (AdsPower VPS)
  */
-async function startRemoteBrowser(profileId, timeout = 1800000) {
-  console.log(`  → Starting remote browser for profile: ${profileId}`);
+async function startRemoteBrowser(profileId, provider = 'adspower', timeout = 1800000) {
+  console.log(`  → Starting remote browser for profile: ${profileId} (provider: ${provider})`);
+  
+  const body = {
+    provider: provider,
+    timeout: timeout,
+    clientId: 'otto-qa-runner'
+  };
+  
+  // Add profileId or proxy based on provider
+  if (provider === 'bas') {
+    // BAS: use rotating proxy, profileId optional
+    body.proxy = getNextBASProxy();
+    if (profileId && typeof profileId === 'number') {
+      body.profileId = profileId;
+    }
+    console.log(`  → Using BAS proxy: ${body.proxy.substring(0, 40)}...`);
+  } else {
+    // AdsPower: profileId required
+    body.profileId = profileId;
+  }
   
   const data = await makeRequest('/browsers/start', {
     method: 'POST',
-    body: JSON.stringify({
-      provider: 'adspower',
-      profileId: profileId,
-      timeout: timeout,
-      clientId: 'otto-qa-runner'
-    })
+    body: JSON.stringify(body)
   });
   
   // Add API key to WebSocket URL as per Remote Browser API docs
@@ -68,13 +83,13 @@ async function startRemoteBrowser(profileId, timeout = 1800000) {
 /**
  * Stop browser on Remote Browser API
  */
-async function stopRemoteBrowser(browserId) {
-  console.log(`  → Stopping remote browser: ${browserId}`);
+async function stopRemoteBrowser(browserId, provider = 'adspower') {
+  console.log(`  → Stopping remote browser: ${browserId} (provider: ${provider})`);
   
   const data = await makeRequest('/browsers/stop', {
     method: 'POST',
     body: JSON.stringify({
-      provider: 'adspower',
+      provider: provider,
       browserId: browserId
     })
   });
@@ -98,9 +113,9 @@ async function stopRemoteBrowser(browserId) {
 /**
  * List available profiles from Remote Browser API
  */
-async function listRemoteProfiles(page = 1, pageSize = 200) {
+async function listRemoteProfiles(provider = 'adspower', page = 1, pageSize = 200) {
   const params = new URLSearchParams({
-    provider: 'adspower',
+    provider: provider,
     page: page.toString(),
     pageSize: pageSize.toString()
   });
