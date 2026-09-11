@@ -662,6 +662,7 @@ async function runProfileTest(profileId, config, outputDir) {
   let browser = null;
   let page = null;
   let browserId = null;
+  let connectionProvider = null; // Provider used for this connection
   const waits = WAIT_PROFILES[config.wait_profile];
   
   try {
@@ -671,7 +672,7 @@ async function runProfileTest(profileId, config, outputDir) {
     const provider = config.provider || 'adspower';
     const connection = await startProfile(profileId, provider);
     browserId = connection.browserId; // Store browser ID for cleanup
-    const connectionProvider = connection.provider || provider;
+    connectionProvider = connection.provider || provider;
     result.steps.push({ step: 'profile_started', timestamp: new Date().toISOString() });
     
     // Connect via CDP
