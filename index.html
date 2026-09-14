@@ -584,6 +584,12 @@ function addProfile() {
 // Manual Login Management
 let currentLoginSession = null;
 
+// Get API base URL from companion URL
+function getApiBase() {
+  const companionUrl = $('companionUrl').value.trim() || 'https://127.0.0.1:8787';
+  return companionUrl;
+}
+
 function populateLoginProfiles() {
   const select = $('loginProfile');
   const profiles = [...document.querySelectorAll('input[name=profile]')].map(x => x.value);
@@ -610,7 +616,7 @@ async function startManualLogin() {
   try {
     showLoginStatus('⏳', 'Starting browser...', 'Opening browser profile for manual login');
     
-    const response = await fetch(`${apiBase}/login/start`, {
+    const response = await fetch(`${getApiBase()}/login/start`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ profile_id: profileId, provider })
@@ -650,7 +656,7 @@ async function completeManualLogin() {
   try {
     showLoginStatus('🔄', 'Verifying login...', 'Checking if you are logged in to Otto.de');
     
-    const response = await fetch(`${apiBase}/login/complete`, {
+    const response = await fetch(`${getApiBase()}/login/complete`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ 
@@ -717,7 +723,7 @@ function hideLoginStatus() {
 
 async function loadLoggedInProfiles() {
   try {
-    const response = await fetch(`${apiBase}/login/profiles`);
+    const response = await fetch(`${getApiBase()}/login/profiles`);
     const result = await response.json();
     
     if (!result.ok || !result.profiles || result.profiles.length === 0) {
@@ -763,7 +769,7 @@ async function clearProfileLogin(profileId, provider) {
   }
   
   try {
-    const response = await fetch(`${apiBase}/login/clear`, {
+    const response = await fetch(`${getApiBase()}/login/clear`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ profile_id: profileId, provider })
@@ -1038,7 +1044,7 @@ async function runLocalTest() {
   try {
     const loginChecks = await Promise.all(
       profiles.map(async (profileId) => {
-        const response = await fetch(`${apiBase}/login/status?profile_id=${profileId}&provider=${provider}`);
+        const response = await fetch(`${getApiBase()}/login/status?profile_id=${profileId}&provider=${provider}`);
         const result = await response.json();
         return {
           profileId,
