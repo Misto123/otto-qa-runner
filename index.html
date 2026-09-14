@@ -397,26 +397,37 @@ function showAppContent() {
   $('appContent').style.display = 'block';
 }
 
-$('loginForm').addEventListener('submit', e => {
-  e.preventDefault();
-  const password = $('passwordInput').value;
+// Initialize login/logout handlers when DOM is ready
+document.addEventListener('DOMContentLoaded', () => {
+  const loginForm = $('loginForm');
+  const logoutBtn = $('logoutBtn');
   
-  if (password === CORRECT_PASSWORD) {
-    showAppContent();
-    $('passwordInput').value = '';
-    $('loginError').style.display = 'none';
-  } else {
-    $('loginError').textContent = 'Incorrect password. Please try again.';
-    $('loginError').style.display = 'block';
-    $('passwordInput').value = '';
-    $('passwordInput').focus();
+  if (loginForm) {
+    loginForm.addEventListener('submit', e => {
+      e.preventDefault();
+      const password = $('passwordInput').value;
+      
+      if (password === CORRECT_PASSWORD) {
+        showAppContent();
+        $('passwordInput').value = '';
+        $('loginError').style.display = 'none';
+      } else {
+        $('loginError').textContent = 'Incorrect password. Please try again.';
+        $('loginError').style.display = 'block';
+        $('passwordInput').value = '';
+        $('passwordInput').focus();
+      }
+    });
+  }
+  
+  if (logoutBtn) {
+    logoutBtn.addEventListener('click', () => {
+      showLoginScreen();
+      $('passwordInput').focus();
+    });
   }
 });
 
-$('logoutBtn').addEventListener('click', () => {
-  showLoginScreen();
-  $('passwordInput').focus();
-});
 
 // Validation functions
 function validateURL(input) {
