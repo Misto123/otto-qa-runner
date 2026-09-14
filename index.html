@@ -276,6 +276,46 @@ main{max-width:980px;margin:0 auto;padding:44px 22px 72px}.eyebrow{color:var(--a
       <div class="hint">Select profiles to use. New profiles will be auto-selected. Visits will be distributed across selected profiles.</div>
     </section>
     
+    <section class="panel"><h2>🔐 Login Management</h2>
+      <div class="hint" style="margin-bottom:16px">Manually log in to Otto.de on a profile to enable authenticated QA testing. The browser will open for you to log in, then the profile will be tagged as logged-in.</div>
+      
+      <div class="grid" style="grid-template-columns: 1fr 1fr; gap:12px">
+        <div>
+          <label for="loginProfile">Profile to login</label>
+          <select id="loginProfile" style="width:100%">
+            <option value="">Select a profile...</option>
+          </select>
+        </div>
+        
+        <div style="display:flex;align-items:flex-end;gap:8px">
+          <button type="button" class="secondary" onclick="startManualLogin()" style="flex:1">
+            🔐 Login to Otto.de
+          </button>
+        </div>
+      </div>
+      
+      <div id="loginStatus" style="margin-top:12px;padding:12px;background:var(--panel2);border-radius:8px;display:none">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+          <span id="loginStatusIcon">⏳</span>
+          <span id="loginStatusText" style="font-weight:500"></span>
+        </div>
+        <div id="loginStatusDetail" style="font-size:0.9em;opacity:0.8"></div>
+        <div id="loginActions" style="margin-top:12px;display:none;gap:8px">
+          <button type="button" class="primary" onclick="completeManualLogin()">
+            ✅ I'm Logged In
+          </button>
+          <button type="button" class="secondary" onclick="cancelManualLogin()">
+            ❌ Cancel
+          </button>
+        </div>
+      </div>
+      
+      <div id="loggedInProfiles" style="margin-top:16px;display:none">
+        <h3 style="font-size:0.95em;margin-bottom:8px;opacity:0.9">Logged-in Profiles</h3>
+        <div id="loggedInList" style="display:flex;flex-direction:column;gap:6px"></div>
+      </div>
+    </section>
+    
     <section class="panel"><h2>Actions</h2>
       <div class="grid">
         <div><label for="minScroll">Minimum scrolls</label><input id="minScroll" type="number" min="0" max="20" value="2" required></div>
@@ -541,6 +581,214 @@ function addProfile() {
   saveFormData();
 }
 
+// Manual Login Management
+let currentLoginSession = null;
+
+function populateLoginProfiles() {
+  const select = $('loginProfile');
+  const profiles = [...document.querySelectorAll('input[name=profile]')].map(x => x.value);
+  
+  select.innerHTML = '<option value="">Select a profile...</option>';
+  profiles.forEach(profile => {
+    const option = document.createElement('option');
+    option.value = profile;
+    option.textContent = profile;
+    select.appendChild(option);
+  });
+}
+
+async function startManualLogin() {
+  const profileId = $('loginProfile').value;
+  
+  if (!profileId) {
+    showError('Please select a profile to login with.');
+    return;
+  }
+  
+  const provider = $('useRemoteApi').checked ? 'adspower' : 'adspower'; // Can add BAS later
+  
+  try {
+    showLoginStatus('⏳', 'Starting browser...', 'Opening browser profile for manual login');
+    
+    const response = await fetch(`${apiBase}/login/start`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ profile_id: profileId, provider })
+    });
+    
+    const result = await response.json();
+    
+    if (!result.ok) {
+      throw new Error(result.error || 'Failed to start login');
+    }
+    
+    currentLoginSession = {
+      sessionId: result.session_id,
+      profileId,
+      provider
+    };
+    
+    showLoginStatus(
+      '👤', 
+      'Please log in to Otto.de', 
+      `Browser is open. Log in to your Otto.de account, then click "I'm Logged In" below.`,
+      true
+    );
+    
+  } catch (error) {
+    showError('Failed to start login: ' + error.message);
+    hideLoginStatus();
+  }
+}
+
+async function completeManualLogin() {
+  if (!currentLoginSession) {
+    showError('No active login session');
+    return;
+  }
+  
+  try {
+    showLoginStatus('🔄', 'Verifying login...', 'Checking if you are logged in to Otto.de');
+    
+    const response = await fetch(`${apiBase}/login/complete`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ 
+        session_id: currentLoginSession.sessionId,
+        keep_open: false
+      })
+    });
+    
+    const result = await response.json();
+    
+    if (!result.ok || !result.success) {
+      throw new Error(result.error || result.message || 'Login verification failed');
+    }
+    
+    showLoginStatus(
+      '✅', 
+      'Login successful!', 
+      `Profile ${currentLoginSession.profileId} is now tagged as logged-in to Otto.de`,
+      false
+    );
+    
+    currentLoginSession = null;
+    
+    // Refresh logged-in profiles list
+    setTimeout(() => {
+      loadLoggedInProfiles();
+      hideLoginStatus();
+    }, 3000);
+    
+  } catch (error) {
+    showError('Failed to complete login: ' + error.message);
+    showLoginStatus(
+      '⚠️', 
+      'Login verification failed', 
+      error.message + '. Please ensure you are logged in and try again.',
+      true
+    );
+  }
+}
+
+function cancelManualLogin() {
+  currentLoginSession = null;
+  hideLoginStatus();
+  showInfo('Login cancelled');
+}
+
+function showLoginStatus(icon, text, detail, showActions = false) {
+  const status = $('loginStatus');
+  const statusIcon = $('loginStatusIcon');
+  const statusText = $('loginStatusText');
+  const statusDetail = $('loginStatusDetail');
+  const actions = $('loginActions');
+  
+  statusIcon.textContent = icon;
+  statusText.textContent = text;
+  statusDetail.textContent = detail;
+  actions.style.display = showActions ? 'flex' : 'none';
+  status.style.display = 'block';
+}
+
+function hideLoginStatus() {
+  $('loginStatus').style.display = 'none';
+}
+
+async function loadLoggedInProfiles() {
+  try {
+    const response = await fetch(`${apiBase}/login/profiles`);
+    const result = await response.json();
+    
+    if (!result.ok || !result.profiles || result.profiles.length === 0) {
+      $('loggedInProfiles').style.display = 'none';
+      return;
+    }
+    
+    const list = $('loggedInList');
+    list.innerHTML = '';
+    
+    result.profiles.forEach(profile => {
+      const item = document.createElement('div');
+      item.style.cssText = 'display:flex;justify-content:space-between;align-items:center;padding:8px;background:var(--panel);border-radius:6px';
+      
+      const daysAgo = profile.daysSinceLogin === 0 ? 'today' : 
+                      profile.daysSinceLogin === 1 ? '1 day ago' : 
+                      `${profile.daysSinceLogin} days ago`;
+      
+      item.innerHTML = `
+        <div>
+          <div style="font-weight:500">${profile.profileId}</div>
+          <div style="font-size:0.85em;opacity:0.7">Logged in ${daysAgo}</div>
+        </div>
+        <button type="button" class="secondary" style="padding:4px 12px;font-size:0.85em" 
+                onclick="clearProfileLogin('${profile.profileId}', '${profile.provider}')">
+          Clear
+        </button>
+      `;
+      
+      list.appendChild(item);
+    });
+    
+    $('loggedInProfiles').style.display = 'block';
+    
+  } catch (error) {
+    console.error('Failed to load logged-in profiles:', error);
+  }
+}
+
+async function clearProfileLogin(profileId, provider) {
+  if (!confirm(`Clear login status for profile ${profileId}?`)) {
+    return;
+  }
+  
+  try {
+    const response = await fetch(`${apiBase}/login/clear`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ profile_id: profileId, provider })
+    });
+    
+    const result = await response.json();
+    
+    if (!result.ok) {
+      throw new Error(result.error || 'Failed to clear login');
+    }
+    
+    showInfo(`Login cleared for ${profileId}`);
+    loadLoggedInProfiles();
+    
+  } catch (error) {
+    showError('Failed to clear login: ' + error.message);
+  }
+}
+
+// Initialize login UI when page loads
+window.addEventListener('DOMContentLoaded', () => {
+  populateLoginProfiles();
+  loadLoggedInProfiles();
+});
+
 function removeProfile(btn) {
   if (confirm('Remove this profile?')) {
     btn.closest('.checkrow').remove();
@@ -783,6 +1031,44 @@ $('companionUrl').addEventListener('change', () => {
 async function runLocalTest() {
   if (!validateForm()) return;
   
+  // Check login status for selected profiles
+  const profiles = [...document.querySelectorAll('input[name=profile]:checked')].map(x => x.value);
+  const provider = 'adspower'; // Can add BAS later
+  
+  try {
+    const loginChecks = await Promise.all(
+      profiles.map(async (profileId) => {
+        const response = await fetch(`${apiBase}/login/status?profile_id=${profileId}&provider=${provider}`);
+        const result = await response.json();
+        return {
+          profileId,
+          loggedIn: result.logged_in,
+          daysSince: result.days_since_login
+        };
+      })
+    );
+    
+    const notLoggedIn = loginChecks.filter(p => !p.loggedIn);
+    const oldLogins = loginChecks.filter(p => p.loggedIn && p.daysSince > 30);
+    
+    if (notLoggedIn.length > 0) {
+      const message = `⚠️ ${notLoggedIn.length} profile(s) not logged in to Otto.de:\n${notLoggedIn.map(p => `  • ${p.profileId}`).join('\n')}\n\nTests may fail without authentication. Continue anyway?`;
+      
+      if (!confirm(message)) {
+        return;
+      }
+    } else if (oldLogins.length > 0) {
+      const message = `⚠️ ${oldLogins.length} profile(s) logged in >30 days ago:\n${oldLogins.map(p => `  • ${p.profileId} (${p.daysSince} days)`).join('\n')}\n\nSession may have expired. Continue anyway?`;
+      
+      if (!confirm(message)) {
+        return;
+      }
+    }
+  } catch (error) {
+    console.error('Failed to check login status:', error);
+    // Continue anyway if check fails
+  }
+  
   // Auto-connect if button is disabled (companion not connected yet)
   if ($('runTest').disabled) {
     $('runTest').textContent = '⏳ Connecting...';
@@ -799,7 +1085,6 @@ async function runLocalTest() {
   
   const companionUrl = $('companionUrl').value.trim() || 'https://127.0.0.1:8787';
   
-  const profiles = [...document.querySelectorAll('input[name=profile]:checked')].map(x => x.value);
   const totalVisits = +$('totalVisits').value || 9;
   const avgTimePerVisit = 45; // seconds
   const estimatedDuration = Math.ceil((totalVisits * avgTimePerVisit) / 60);

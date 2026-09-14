@@ -6,6 +6,16 @@ const fs = require('fs');
 const path = require('path');
 const os = require('os');
 const { validateConfig, runConfig } = require('../runner/otto-runner.cjs');
+const { manualLoginFlow, completeManualLogin } = require('../runner/manual-login.cjs');
+const { 
+  getProfileMetadata, 
+  isProfileLoggedIn, 
+  getLoginDate, 
+  getDaysSinceLogin,
+  tagProfileLoggedIn,
+  clearProfileLogin,
+  getLoggedInProfiles
+} = require('../runner/profile-metadata.cjs');
 
 const HOST = process.env.HOST || '0.0.0.0';
 const PORT = Number(process.env.PORT || 8787);
@@ -15,6 +25,7 @@ const ALLOWED_ORIGINS = new Set(['https://otto-qa-runner.vercel.app', 'http://lo
 const ALLOW_LOCAL_NETWORK = true;
 const REPORTS_DIR = path.join(process.cwd(), 'reports');
 const runs = new Map();
+const manualLogins = new Map(); // Track active manual login sessions
 
 // Ensure reports directory exists
 if (!fs.existsSync(REPORTS_DIR)) {
@@ -150,6 +161,144 @@ async function requestHandler(req, res) {
       }
     }
     return state ? send(res,200,{run_id:id, log:state.log || []},origin) : send(res,404,{ok:false,error:'Run not found'},origin);
+  }
+  
+  // Manual login endpoints
+  if (req.url === '/login/start' && req.method === 'POST') {
+    try {
+      const body = await readBody(req);
+      const { profile_id, provider = 'adspower' } = body;
+      
+      if (!profile_id) {
+        return send(res, 400, { ok: false, error: 'profile_id required' }, origin);
+      }
+      
+      const sessionId = crypto.randomUUID();
+      const result = await manualLoginFlow(profile_id, provider, {
+        onWaiting: (data) => {
+          console.log(`[Manual Login] Session ${sessionId} started`);
+        }
+      });
+      
+      manualLogins.set(sessionId, {
+        sessionId,
+        profileId: profile_id,
+        provider,
+        browserId: result.browserId,
+        startedAt: result.startedAt,
+        status: 'waiting'
+      });
+      
+      return send(res, 200, {
+        ok: true,
+        session_id: sessionId,
+        profile_id,
+        provider,
+        status: 'waiting',
+        message: 'Browser opened. Please log in manually and call /login/complete'
+      }, origin);
+      
+    } catch (error) {
+      console.error('[API] Error starting manual login:', error);
+      return send(res, 500, { ok: false, error: error.message }, origin);
+    }
+  }
+  
+  if (req.url === '/login/complete' && req.method === 'POST') {
+    try {
+      const body = await readBody(req);
+      const { session_id, keep_open = false } = body;
+      
+      if (!session_id) {
+        return send(res, 400, { ok: false, error: 'session_id required' }, origin);
+      }
+      
+      const session = manualLogins.get(session_id);
+      if (!session) {
+        return send(res, 404, { ok: false, error: 'Session not found' }, origin);
+      }
+      
+      const result = await completeManualLogin(
+        session.profileId,
+        session.provider,
+        session.browserId,
+        keep_open
+      );
+      
+      if (result.success) {
+        // Tag profile as logged in
+        tagProfileLoggedIn(session.profileId, session.provider, 'otto.de');
+        
+        // Update session
+        session.status = 'completed';
+        session.completedAt = new Date().toISOString();
+        
+        return send(res, 200, {
+          ok: true,
+          ...result,
+          message: 'Login verified and profile tagged'
+        }, origin);
+      } else {
+        return send(res, 400, {
+          ok: false,
+          ...result,
+          message: 'Login verification failed'
+        }, origin);
+      }
+      
+    } catch (error) {
+      console.error('[API] Error completing manual login:', error);
+      return send(res, 500, { ok: false, error: error.message }, origin);
+    }
+  }
+  
+  if (req.url === '/login/status' && req.method === 'GET') {
+    const url = new URL(req.url, `http://${req.headers.host}`);
+    const profileId = url.searchParams.get('profile_id');
+    const provider = url.searchParams.get('provider') || 'adspower';
+    
+    if (!profileId) {
+      return send(res, 400, { ok: false, error: 'profile_id required' }, origin);
+    }
+    
+    const loggedIn = isProfileLoggedIn(profileId, provider, 'otto.de');
+    const loginDate = getLoginDate(profileId, provider, 'otto.de');
+    const daysSince = getDaysSinceLogin(profileId, provider, 'otto.de');
+    
+    return send(res, 200, {
+      ok: true,
+      profile_id: profileId,
+      provider,
+      logged_in: loggedIn,
+      login_date: loginDate,
+      days_since_login: daysSince
+    }, origin);
+  }
+  
+  if (req.url === '/login/profiles' && req.method === 'GET') {
+    const profiles = getLoggedInProfiles('otto.de');
+    return send(res, 200, { ok: true, profiles }, origin);
+  }
+  
+  if (req.url === '/login/clear' && req.method === 'POST') {
+    try {
+      const body = await readBody(req);
+      const { profile_id, provider = 'adspower' } = body;
+      
+      if (!profile_id) {
+        return send(res, 400, { ok: false, error: 'profile_id required' }, origin);
+      }
+      
+      clearProfileLogin(profile_id, provider, 'otto.de');
+      
+      return send(res, 200, {
+        ok: true,
+        message: 'Login status cleared'
+      }, origin);
+      
+    } catch (error) {
+      return send(res, 500, { ok: false, error: error.message }, origin);
+    }
   }
   
   return send(res,404,{ok:false,error:'Not found'},origin);
