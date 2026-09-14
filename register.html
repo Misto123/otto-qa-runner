@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Otto.de - Bulk Registration</title>
+<style>
+:root {
+  --bg: #181b1f;
+  --panel: #1e2126;
+  --panel2: #252932;
+  --text: #e4e8ef;
+  --muted: #9199ab;
+  --line: #2d3139;
+  --accent: #ffb454;
+  --good: #6ee7b7;
+  --danger: #fb7185;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: system-ui, -apple-system, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.6;
+  min-height: 100vh;
+}
+
+main {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 44px 22px;
+}
+
+h1 {
+  font-size: 42px;
+  margin-bottom: 10px;
+  letter-spacing: -0.04em;
+}
+
+h1 span { color: var(--accent); }
+
+.intro {
+  color: var(--muted);
+  margin-bottom: 30px;
+  max-width: 800px;
+}
+
+.panel {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  padding: 24px;
+  margin-top: 20px;
+}
+
+.panel h2 {
+  font-size: 18px;
+  margin-bottom: 18px;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+}
+
+label {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 7px;
+  color: #d9dde3;
+}
+
+input, textarea, select {
+  width: 100%;
+  border: 1px solid var(--line);
+  background: var(--panel2);
+  color: var(--text);
+  border-radius: 10px;
+  padding: 12px;
+  font: inherit;
+  outline: none;
+}
+
+input:focus, textarea:focus, select:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(255, 180, 84, 0.15);
+}
+
+textarea {
+  min-height: 120px;
+  font-family: 'SF Mono', Monaco, Consolas, monospace;
+  font-size: 13px;
+  resize: vertical;
+}
+
+button {
+  border: 0;
+  border-radius: 10px;
+  padding: 12px 18px;
+  font: 700 14px inherit;
+  cursor: pointer;
+}
+
+button.primary {
+  background: var(--accent);
+  color: #1d160c;
+}
+
+button.secondary {
+  background: var(--panel2);
+  color: var(--text);
+  border: 1px solid var(--line);
+}
+
+button:hover { filter: brightness(1.1); }
+button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 20px;
+}
+
+.hint {
+  font-size: 12px;
+  color: var(--muted);
+  margin-top: 5px;
+}
+
+#dataPreview {
+  background: var(--panel2);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 16px;
+  margin-top: 16px;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.data-item {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 12px;
+  margin-bottom: 8px;
+  font-size: 13px;
+}
+
+.data-item strong {
+  color: var(--accent);
+}
+
+#statusLog {
+  background: var(--panel2);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 16px;
+  margin-top: 16px;
+  max-height: 500px;
+  overflow-y: auto;
+  font-family: 'SF Mono', Monaco, monospace;
+  font-size: 13px;
+  line-height: 1.8;
+  display: none;
+}
+
+.log-success { color: var(--good); }
+.log-error { color: var(--danger); }
+.log-info { color: var(--muted); }
+
+.stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-top: 20px;
+}
+
+.stat-box {
+  background: var(--panel2);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 16px;
+  text-align: center;
+}
+
+.stat-box .number {
+  font-size: 32px;
+  font-weight: 700;
+  color: var(--accent);
+}
+
+.stat-box .label {
+  font-size: 12px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin-top: 4px;
+}
+
+.full { grid-column: 1 / -1; }
+</style>
+</head>
+<body>
+
+<main>
+  <h1>Otto.de <span>Bulk Registration</span></h1>
+  <p class="intro">
+    Automatically create multiple Otto.de accounts using generated or imported data. 
+    Each account will be created in a separate AdsPower profile with unique fingerprints.
+  </p>
+
+  <section class="panel">
+    <h2>📋 Account Data Input</h2>
+    
+    <div class="grid">
+      <div>
+        <label for="dataSource">Data Source</label>
+        <select id="dataSource">
+          <option value="generate">Generate Random Data</option>
+          <option value="paste">Paste CSV Data</option>
+        </select>
+      </div>
+      
+      <div>
+        <label for="accountCount">Number of Accounts</label>
+        <input type="number" id="accountCount" min="1" max="100" value="5">
+        <div class="hint">Max 100 accounts per batch</div>
+      </div>
+    </div>
+    
+    <div id="generateOptions" style="margin-top: 16px;">
+      <div class="grid">
+        <div>
+          <label for="emailDomain">Email Domain</label>
+          <input type="text" id="emailDomain" value="example.com" placeholder="example.com">
+          <div class="hint">Will generate: firstname.lastname@domain</div>
+        </div>
+        
+        <div>
+          <label for="country">Country</label>
+          <select id="country">
+            <option value="DE">Germany (DE)</option>
+            <option value="AT">Austria (AT)</option>
+            <option value="CH">Switzerland (CH)</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    
+    <div id="pasteOptions" style="margin-top: 16px; display: none;">
+      <label for="csvData">CSV Data (email, firstName, lastName, address, zipCode, city, phone)</label>
+      <textarea id="csvData" placeholder="test@example.com,Max,Mustermann,Musterstraße 1,10115,Berlin,+4915112345678"></textarea>
+      <div class="hint">One account per line. Format: email, firstName, lastName, address, zipCode, city, phone</div>
+    </div>
+    
+    <div class="actions">
+      <button class="primary" onclick="generateData()">
+        🎲 Generate Data
+      </button>
+      <button class="secondary" onclick="downloadTemplate()">
+        📥 Download CSV Template
+      </button>
+    </div>
+  </section>
+
+  <section class="panel" id="previewSection" style="display: none;">
+    <h2>👥 Generated Accounts ({<span id="accountTotal">0</span>})</h2>
+    <div id="dataPreview"></div>
+    
+    <div class="actions">
+      <button class="primary" onclick="startRegistration()">
+        🚀 Start Registration
+      </button>
+      <button class="secondary" onclick="clearData()">
+        🗑️ Clear Data
+      </button>
+    </div>
+  </section>
+
+  <section class="panel" id="progressSection" style="display: none;">
+    <h2>📊 Registration Progress</h2>
+    
+    <div class="stats">
+      <div class="stat-box">
+        <div class="number" id="statTotal">0</div>
+        <div class="label">Total</div>
+      </div>
+      <div class="stat-box">
+        <div class="number" id="statSuccess">0</div>
+        <div class="label">Success</div>
+      </div>
+      <div class="stat-box">
+        <div class="number" id="statFailed">0</div>
+        <div class="label">Failed</div>
+      </div>
+      <div class="stat-box">
+        <div class="number" id="statProgress">0%</div>
+        <div class="label">Progress</div>
+      </div>
+    </div>
+    
+    <div id="statusLog"></div>
+    
+    <div class="actions" style="margin-top: 16px;">
+      <button class="secondary" onclick="stopRegistration()">
+        ⏸️ Stop Registration
+      </button>
+      <button class="secondary" onclick="downloadResults()">
+        💾 Download Results
+      </button>
+    </div>
+  </section>
+</main>
+
+<script>
+let accountData = [];
+let registrationActive = false;
+let registrationResults = [];
+
+// Data source toggle
+document.getElementById('dataSource').addEventListener('change', (e) => {
+  if (e.target.value === 'generate') {
+    document.getElementById('generateOptions').style.display = 'block';
+    document.getElementById('pasteOptions').style.display = 'none';
+  } else {
+    document.getElementById('generateOptions').style.display = 'none';
+    document.getElementById('pasteOptions').style.display = 'block';
+  }
+});
+
+// German names database
+const germanFirstNames = {
+  male: ['Max', 'Paul', 'Leon', 'Lukas', 'Felix', 'Jonas', 'Tim', 'Moritz', 'Finn', 'Noah', 'Ben', 'Julian', 'David', 'Elias', 'Tom'],
+  female: ['Emma', 'Mia', 'Hannah', 'Sophia', 'Anna', 'Lena', 'Emilia', 'Marie', 'Lea', 'Laura', 'Lina', 'Paula', 'Clara', 'Lisa', 'Julia']
+};
+
+const germanLastNames = ['Müller', 'Schmidt', 'Schneider', 'Fischer', 'Weber', 'Meyer', 'Wagner', 'Becker', 'Schulz', 'Hoffmann', 'Koch', 'Bauer', 'Richter', 'Klein', 'Wolf', 'Schröder', 'Neumann', 'Schwarz', 'Zimmermann', 'Braun'];
+
+const germanStreets = ['Hauptstraße', 'Bahnhofstraße', 'Dorfstraße', 'Schulstraße', 'Gartenstraße', 'Bergstraße', 'Kirchstraße', 'Lindenstraße', 'Waldstraße', 'Mozartstraße'];
+
+const germanCities = {
+  DE: [
+    {name: 'Berlin', zip: ['10115', '10117', '10178']},
+    {name: 'Hamburg', zip: ['20095', '20097', '20099']},
+    {name: 'München', zip: ['80331', '80333', '80335']},
+    {name: 'Köln', zip: ['50667', '50668', '50670']},
+    {name: 'Frankfurt', zip: ['60308', '60311', '60313']}
+  ]
+};
+
+function generateRandomAccount(country = 'DE') {
+  const isMale = Math.random() > 0.5;
+  const firstName = isMale ? 
+    germanFirstNames.male[Math.floor(Math.random() * germanFirstNames.male.length)] :
+    germanFirstNames.female[Math.floor(Math.random() * germanFirstNames.female.length)];
+  
+  const lastName = germanLastNames[Math.floor(Math.random() * germanLastNames.length)];
+  
+  const email = `${firstName.toLowerCase()}.${lastName.toLowerCase()}${Math.floor(Math.random() * 9999)}@${document.getElementById('emailDomain').value}`;
+  
+  const street = germanStreets[Math.floor(Math.random() * germanStreets.length)];
+  const houseNumber = Math.floor(Math.random() * 200) + 1;
+  const address = `${street} ${houseNumber}`;
+  
+  const city = germanCities[country][Math.floor(Math.random() * germanCities[country].length)];
+  const zipCode = city.zip[Math.floor(Math.random() * city.zip.length)];
+  
+  const phone = `+49${Math.floor(Math.random() * 900000000) + 100000000}`;
+  
+  const password = generateSecurePassword();
+  
+  return {
+    email,
+    firstName,
+    lastName,
+    address,
+    zipCode,
+    city: city.name,
+    phone,
+    password,
+    country
+  };
+}
+
+function generateSecurePassword() {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789!@#$%';
+  let password = '';
+  for (let i = 0; i < 12; i++) {
+    password += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return password;
+}
+
+function generateData() {
+  const source = document.getElementById('dataSource').value;
+  
+  if (source === 'generate') {
+    const count = parseInt(document.getElementById('accountCount').value);
+    const country = document.getElementById('country').value;
+    
+    accountData = [];
+    for (let i = 0; i < count; i++) {
+      accountData.push(generateRandomAccount(country));
+    }
+  } else {
+    // Parse CSV
+    const csv = document.getElementById('csvData').value.trim();
+    if (!csv) {
+      alert('Please paste CSV data');
+      return;
+    }
+    
+    const lines = csv.split('\n');
+    accountData = lines.map(line => {
+      const [email, firstName, lastName, address, zipCode, city, phone] = line.split(',').map(s => s.trim());
+      return {
+        email,
+        firstName,
+        lastName,
+        address,
+        zipCode,
+        city,
+        phone: phone || `+49${Math.floor(Math.random() * 900000000) + 100000000}`,
+        password: generateSecurePassword(),
+        country: 'DE'
+      };
+    });
+  }
+  
+  displayPreview();
+}
+
+function displayPreview() {
+  const preview = document.getElementById('dataPreview');
+  const total = document.getElementById('accountTotal');
+  
+  total.textContent = accountData.length;
+  
+  preview.innerHTML = accountData.map((acc, i) => `
+    <div class="data-item">
+      <strong>${i + 1}.</strong> ${acc.firstName} ${acc.lastName} &lt;${acc.email}&gt;<br>
+      📍 ${acc.address}, ${acc.zipCode} ${acc.city}<br>
+      📞 ${acc.phone} | 🔑 ${acc.password}
+    </div>
+  `).join('');
+  
+  document.getElementById('previewSection').style.display = 'block';
+}
+
+function clearData() {
+  accountData = [];
+  document.getElementById('previewSection').style.display = 'none';
+}
+
+function downloadTemplate() {
+  const csv = 'email,firstName,lastName,address,zipCode,city,phone\n' +
+               'test@example.com,Max,Mustermann,Musterstraße 1,10115,Berlin,+4915112345678\n' +
+               'test2@example.com,Anna,Schmidt,Hauptstraße 42,20095,Hamburg,+4915198765432';
+  
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'otto-registration-template.csv';
+  a.click();
+}
+
+async function startRegistration() {
+  if (accountData.length === 0) {
+    alert('No account data to register');
+    return;
+  }
+  
+  registrationActive = true;
+  registrationResults = [];
+  
+  document.getElementById('progressSection').style.display = 'block';
+  document.getElementById('statusLog').style.display = 'block';
+  
+  const statusLog = document.getElementById('statusLog');
+  const statTotal = document.getElementById('statTotal');
+  const statSuccess = document.getElementById('statSuccess');
+  const statFailed = document.getElementById('statFailed');
+  const statProgress = document.getElementById('statProgress');
+  
+  statTotal.textContent = accountData.length;
+  statSuccess.textContent = '0';
+  statFailed.textContent = '0';
+  statProgress.textContent = '0%';
+  
+  statusLog.innerHTML = '<div class="log-info">🚀 Starting registration process...</div>';
+  
+  let successCount = 0;
+  let failedCount = 0;
+  
+  for (let i = 0; i < accountData.length; i++) {
+    if (!registrationActive) {
+      statusLog.innerHTML += '<div class="log-info">⏸️ Registration stopped by user</div>';
+      break;
+    }
+    
+    const account = accountData[i];
+    
+    statusLog.innerHTML += `<div class="log-info">📝 [${i + 1}/${accountData.length}] Registering ${account.email}...</div>`;
+    statusLog.scrollTop = statusLog.scrollHeight;
+    
+    try {
+      const result = await registerAccount(account);
+      
+      if (result.success) {
+        successCount++;
+        registrationResults.push({ ...account, status: 'success', profileId: result.profileId });
+        statusLog.innerHTML += `<div class="log-success">✅ Success: ${account.email} (Profile: ${result.profileId})</div>`;
+      } else {
+        failedCount++;
+        registrationResults.push({ ...account, status: 'failed', error: result.error });
+        statusLog.innerHTML += `<div class="log-error">❌ Failed: ${account.email} - ${result.error}</div>`;
+      }
+    } catch (error) {
+      failedCount++;
+      registrationResults.push({ ...account, status: 'failed', error: error.message });
+      statusLog.innerHTML += `<div class="log-error">❌ Error: ${account.email} - ${error.message}</div>`;
+    }
+    
+    statSuccess.textContent = successCount;
+    statFailed.textContent = failedCount;
+    statProgress.textContent = Math.round(((i + 1) / accountData.length) * 100) + '%';
+    
+    statusLog.scrollTop = statusLog.scrollHeight;
+    
+    // Wait between registrations to avoid rate limiting
+    await new Promise(resolve => setTimeout(resolve, 2000));
+  }
+  
+  statusLog.innerHTML += `<div class="log-info">✨ Registration complete! ${successCount} succeeded, ${failedCount} failed.</div>`;
+  registrationActive = false;
+}
+
+async function registerAccount(accountData) {
+  // This will call the companion server API
+  const companionUrl = 'https://127.0.0.1:8787';
+  
+  try {
+    const response = await fetch(`${companionUrl}/register/otto`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(accountData)
+    });
+    
+    const result = await response.json();
+    return result;
+  } catch (error) {
+    console.error('Registration API error:', error);
+    throw error;
+  }
+}
+
+function stopRegistration() {
+  registrationActive = false;
+}
+
+function downloadResults() {
+  const csv = 'email,firstName,lastName,password,profileId,status,error\n' +
+    registrationResults.map(r => 
+      `${r.email},${r.firstName},${r.lastName},${r.password},${r.profileId || ''},${r.status},${r.error || ''}`
+    ).join('\n');
+  
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `otto-registration-results-${Date.now()}.csv`;
+  a.click();
+}
+</script>
+
+</body>
+</html>

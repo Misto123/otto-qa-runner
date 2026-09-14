@@ -2,7 +2,7 @@
   "version": 2,
   "env": {
     "REMOTE_BROWSER_API_URL": "http://65.21.199.228:3000",
-    "REMOTE_BROWSER_API_KEY": "@remote-browser-api-key"
+    "REMOTE_BROWSER_API_KEY": "JTYDA_7531D_98HGTR_YT154"
   },
   "functions": {
     "api/**/*.js": {

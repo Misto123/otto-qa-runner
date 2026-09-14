@@ -16,6 +16,7 @@ const {
   clearProfileLogin,
   getLoggedInProfiles
 } = require('../runner/profile-metadata.cjs');
+const { createProfileAndRegister } = require('../runner/otto-registration.cjs');
 
 const HOST = process.env.HOST || '0.0.0.0';
 const PORT = Number(process.env.PORT || 8787);
@@ -297,6 +298,56 @@ async function requestHandler(req, res) {
       }, origin);
       
     } catch (error) {
+      return send(res, 500, { ok: false, error: error.message }, origin);
+    }
+  }
+  
+  // Registration endpoint
+  if (req.url === '/register/otto' && req.method === 'POST') {
+    try {
+      const body = await readBody(req);
+      const { email, firstName, lastName, password, address, zipCode, city, phone, country, provider = 'adspower' } = body;
+      
+      if (!email || !firstName || !lastName || !password) {
+        return send(res, 400, { ok: false, error: 'Missing required fields: email, firstName, lastName, password' }, origin);
+      }
+      
+      console.log(`[API] Starting Otto registration for ${email}`);
+      
+      const accountData = {
+        email,
+        firstName,
+        lastName,
+        password,
+        address: address || '',
+        zipCode: zipCode || '',
+        city: city || '',
+        phone: phone || '',
+        country: country || 'DE'
+      };
+      
+      // Create profile and register
+      const result = await createProfileAndRegister(accountData, provider);
+      
+      if (result.success) {
+        return send(res, 200, {
+          ok: true,
+          success: true,
+          profileId: result.profileId,
+          email: result.email,
+          message: 'Registration completed'
+        }, origin);
+      } else {
+        return send(res, 400, {
+          ok: false,
+          success: false,
+          error: result.error || 'Registration failed',
+          email: result.email
+        }, origin);
+      }
+      
+    } catch (error) {
+      console.error('[API] Registration error:', error);
       return send(res, 500, { ok: false, error: error.message }, origin);
     }
   }
