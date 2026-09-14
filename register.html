@@ -15,6 +15,7 @@
   --accent: #ffb454;
   --good: #6ee7b7;
   --danger: #fb7185;
+  --info: #60a5fa;
 }
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -99,14 +100,21 @@ textarea {
 button {
   border: 0;
   border-radius: 10px;
-  padding: 12px 18px;
-  font: 700 14px inherit;
+  padding: 12px 20px;
+  font-weight: 600;
   cursor: pointer;
+  font-size: 14px;
+  transition: all 0.15s;
 }
 
 button.primary {
   background: var(--accent);
-  color: #1d160c;
+  color: #000;
+}
+
+button.primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(255, 180, 84, 0.25);
 }
 
 button.secondary {
@@ -115,8 +123,14 @@ button.secondary {
   border: 1px solid var(--line);
 }
 
-button:hover { filter: brightness(1.1); }
-button:disabled { opacity: 0.5; cursor: not-allowed; }
+button.secondary:hover {
+  border-color: var(--accent);
+}
+
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
 
 .actions {
   display: flex;
@@ -125,82 +139,174 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
 }
 
 .hint {
+  font-size: 13px;
+  color: var(--muted);
+  margin-top: 4px;
+}
+
+.account-card {
+  background: var(--panel2);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 18px;
+  margin-bottom: 12px;
+}
+
+.account-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--line);
+}
+
+.account-name {
+  font-weight: 600;
+  font-size: 16px;
+}
+
+.gender-badge {
+  background: var(--info);
+  color: #000;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.account-fields {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+}
+
+.field {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px;
+  background: var(--panel);
+  border-radius: 8px;
+}
+
+.field-label {
   font-size: 12px;
   color: var(--muted);
-  margin-top: 5px;
+  margin-right: 8px;
 }
 
-#dataPreview {
-  background: var(--panel2);
-  border: 1px solid var(--line);
-  border-radius: 10px;
-  padding: 16px;
-  margin-top: 16px;
-  max-height: 400px;
-  overflow-y: auto;
-}
-
-.data-item {
-  background: var(--panel);
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  padding: 12px;
-  margin-bottom: 8px;
+.field-value {
+  font-family: 'SF Mono', Monaco, Consolas, monospace;
   font-size: 13px;
+  flex: 1;
+  margin-right: 8px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.data-item strong {
-  color: var(--accent);
+.copy-btn {
+  background: var(--accent);
+  color: #000;
+  border: 0;
+  border-radius: 6px;
+  padding: 4px 8px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  flex-shrink: 0;
 }
 
-#statusLog {
-  background: var(--panel2);
-  border: 1px solid var(--line);
-  border-radius: 10px;
-  padding: 16px;
-  margin-top: 16px;
-  max-height: 500px;
-  overflow-y: auto;
-  font-family: 'SF Mono', Monaco, monospace;
-  font-size: 13px;
-  line-height: 1.8;
-  display: none;
+.copy-btn:hover {
+  opacity: 0.8;
 }
 
-.log-success { color: var(--good); }
-.log-error { color: var(--danger); }
-.log-info { color: var(--muted); }
+.copy-btn.copied {
+  background: var(--good);
+}
+
+.profile-section {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+}
+
+.profile-binding {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.profile-binding select {
+  flex: 1;
+  padding: 8px;
+}
+
+.profile-binding button {
+  padding: 8px 16px;
+  font-size: 12px;
+}
 
 .stats {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 16px;
-  margin-top: 20px;
+  margin-bottom: 20px;
 }
 
 .stat-box {
   background: var(--panel2);
   border: 1px solid var(--line);
-  border-radius: 10px;
-  padding: 16px;
+  border-radius: 12px;
+  padding: 18px;
   text-align: center;
 }
 
 .stat-box .number {
   font-size: 32px;
   font-weight: 700;
-  color: var(--accent);
+  margin-bottom: 6px;
 }
 
 .stat-box .label {
-  font-size: 12px;
+  font-size: 13px;
   color: var(--muted);
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  margin-top: 4px;
 }
 
+#logOutput {
+  background: var(--panel2);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 16px;
+  font-family: 'SF Mono', Monaco, Consolas, monospace;
+  font-size: 13px;
+  height: 300px;
+  overflow-y: auto;
+}
+
+.log-line {
+  margin-bottom: 6px;
+  padding: 6px;
+  border-radius: 6px;
+}
+
+.log-success { background: rgba(110, 231, 183, 0.1); color: var(--good); }
+.log-error { background: rgba(251, 113, 133, 0.1); color: var(--danger); }
+.log-info { color: var(--text); }
+
 .full { grid-column: 1 / -1; }
+
+.saved-indicator {
+  display: inline-block;
+  background: var(--good);
+  color: #000;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  margin-left: 10px;
+}
 </style>
 </head>
 <body>
@@ -208,8 +314,8 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
 <main>
   <h1>Otto.de <span>Bulk Registration</span></h1>
   <p class="intro">
-    Automatically create multiple Otto.de accounts using generated or imported data. 
-    Each account will be created in a separate AdsPower profile with unique fingerprints.
+    Create real Otto.de accounts with persistent data storage. All accounts are saved and can be bound to AdsPower or BAS profiles.
+    <strong>Using @icloud.com domain for real accounts.</strong>
   </p>
 
   <section class="panel">
@@ -235,8 +341,8 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
       <div class="grid">
         <div>
           <label for="emailDomain">Email Domain</label>
-          <input type="text" id="emailDomain" value="example.com" placeholder="example.com">
-          <div class="hint">Will generate: firstname.lastname@domain</div>
+          <input type="text" id="emailDomain" value="icloud.com" placeholder="icloud.com">
+          <div class="hint">Will generate: firstname.lastname####@domain</div>
         </div>
         
         <div>
@@ -251,9 +357,9 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
     </div>
     
     <div id="pasteOptions" style="margin-top: 16px; display: none;">
-      <label for="csvData">CSV Data (email, firstName, lastName, address, zipCode, city, phone)</label>
-      <textarea id="csvData" placeholder="test@example.com,Max,Mustermann,Musterstraße 1,10115,Berlin,+4915112345678"></textarea>
-      <div class="hint">One account per line. Format: email, firstName, lastName, address, zipCode, city, phone</div>
+      <label for="csvData">CSV Data (email, gender, firstName, lastName, address, zipCode, city, phone)</label>
+      <textarea id="csvData" placeholder="test@icloud.com,Herr,Max,Mustermann,Musterstraße 1,10115,Berlin,+4915112345678"></textarea>
+      <div class="hint">One account per line. Format: email, gender, firstName, lastName, address, zipCode, city, phone</div>
     </div>
     
     <div class="actions">
@@ -263,16 +369,22 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
       <button class="secondary" onclick="downloadTemplate()">
         📥 Download CSV Template
       </button>
+      <button class="secondary" onclick="loadSavedAccounts()">
+        📂 Load Saved Accounts
+      </button>
     </div>
   </section>
 
   <section class="panel" id="previewSection" style="display: none;">
-    <h2>👥 Generated Accounts ({<span id="accountTotal">0</span>})</h2>
+    <h2>👥 Generated Accounts (<span id="accountTotal">0</span>)</h2>
     <div id="dataPreview"></div>
     
     <div class="actions">
-      <button class="primary" onclick="startRegistration()">
-        🚀 Start Registration
+      <button class="primary" onclick="saveAccountsToFile()">
+        💾 Save Accounts
+      </button>
+      <button class="secondary" onclick="exportCSV()">
+        📥 Export CSV
       </button>
       <button class="secondary" onclick="clearData()">
         🗑️ Clear Data
@@ -301,14 +413,11 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
         <div class="label">Progress</div>
       </div>
     </div>
+
+    <div id="logOutput"></div>
     
-    <div id="statusLog"></div>
-    
-    <div class="actions" style="margin-top: 16px;">
-      <button class="secondary" onclick="stopRegistration()">
-        ⏸️ Stop Registration
-      </button>
-      <button class="secondary" onclick="downloadResults()">
+    <div class="actions">
+      <button class="primary" onclick="downloadResults()">
         💾 Download Results
       </button>
     </div>
@@ -317,12 +426,12 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
 
 <script>
 let accountData = [];
-let registrationActive = false;
 let registrationResults = [];
+let availableProfiles = [];
 
 // Data source toggle
-document.getElementById('dataSource').addEventListener('change', (e) => {
-  if (e.target.value === 'generate') {
+document.getElementById('dataSource').addEventListener('change', function() {
+  if (this.value === 'generate') {
     document.getElementById('generateOptions').style.display = 'block';
     document.getElementById('pasteOptions').style.display = 'none';
   } else {
@@ -331,10 +440,16 @@ document.getElementById('dataSource').addEventListener('change', (e) => {
   }
 });
 
-// German names database
-const germanFirstNames = {
-  male: ['Max', 'Paul', 'Leon', 'Lukas', 'Felix', 'Jonas', 'Tim', 'Moritz', 'Finn', 'Noah', 'Ben', 'Julian', 'David', 'Elias', 'Tom'],
-  female: ['Emma', 'Mia', 'Hannah', 'Sophia', 'Anna', 'Lena', 'Emilia', 'Marie', 'Lea', 'Laura', 'Lina', 'Paula', 'Clara', 'Lisa', 'Julia']
+// German names database with gender
+const germanNames = {
+  male: {
+    firstNames: ['Max', 'Paul', 'Leon', 'Lukas', 'Felix', 'Jonas', 'Tim', 'Moritz', 'Finn', 'Noah', 'Ben', 'Julian', 'David', 'Elias', 'Tom'],
+    gender: 'Herr'
+  },
+  female: {
+    firstNames: ['Emma', 'Mia', 'Hannah', 'Sophia', 'Anna', 'Lena', 'Emilia', 'Marie', 'Lea', 'Laura', 'Lina', 'Paula', 'Clara', 'Lisa', 'Julia'],
+    gender: 'Frau'
+  }
 };
 
 const germanLastNames = ['Müller', 'Schmidt', 'Schneider', 'Fischer', 'Weber', 'Meyer', 'Wagner', 'Becker', 'Schulz', 'Hoffmann', 'Koch', 'Bauer', 'Richter', 'Klein', 'Wolf', 'Schröder', 'Neumann', 'Schwarz', 'Zimmermann', 'Braun'];
@@ -353,13 +468,14 @@ const germanCities = {
 
 function generateRandomAccount(country = 'DE') {
   const isMale = Math.random() > 0.5;
-  const firstName = isMale ? 
-    germanFirstNames.male[Math.floor(Math.random() * germanFirstNames.male.length)] :
-    germanFirstNames.female[Math.floor(Math.random() * germanFirstNames.female.length)];
+  const genderData = isMale ? germanNames.male : germanNames.female;
   
+  const firstName = genderData.firstNames[Math.floor(Math.random() * genderData.firstNames.length)];
+  const gender = genderData.gender;
   const lastName = germanLastNames[Math.floor(Math.random() * germanLastNames.length)];
   
-  const email = `${firstName.toLowerCase()}.${lastName.toLowerCase()}${Math.floor(Math.random() * 9999)}@${document.getElementById('emailDomain').value}`;
+  const emailDomain = document.getElementById('emailDomain').value;
+  const email = `${firstName.toLowerCase()}.${lastName.toLowerCase()}${Math.floor(Math.random() * 9999)}@${emailDomain}`;
   
   const street = germanStreets[Math.floor(Math.random() * germanStreets.length)];
   const houseNumber = Math.floor(Math.random() * 200) + 1;
@@ -373,7 +489,9 @@ function generateRandomAccount(country = 'DE') {
   const password = generateSecurePassword();
   
   return {
+    id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
     email,
+    gender,
     firstName,
     lastName,
     address,
@@ -381,7 +499,10 @@ function generateRandomAccount(country = 'DE') {
     city: city.name,
     phone,
     password,
-    country
+    country,
+    profileId: null,
+    provider: null,
+    status: 'pending'
   };
 }
 
@@ -415,9 +536,11 @@ function generateData() {
     
     const lines = csv.split('\n');
     accountData = lines.map(line => {
-      const [email, firstName, lastName, address, zipCode, city, phone] = line.split(',').map(s => s.trim());
+      const [email, gender, firstName, lastName, address, zipCode, city, phone] = line.split(',').map(s => s.trim());
       return {
+        id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
         email,
+        gender: gender || 'Herr',
         firstName,
         lastName,
         address,
@@ -425,156 +548,243 @@ function generateData() {
         city,
         phone: phone || `+49${Math.floor(Math.random() * 900000000) + 100000000}`,
         password: generateSecurePassword(),
-        country: 'DE'
+        country: 'DE',
+        profileId: null,
+        provider: null,
+        status: 'pending'
       };
     });
   }
   
-  displayPreview();
+  displayAccountPreview();
 }
 
-function displayPreview() {
+function displayAccountPreview() {
   const preview = document.getElementById('dataPreview');
   const total = document.getElementById('accountTotal');
   
   total.textContent = accountData.length;
   
-  preview.innerHTML = accountData.map((acc, i) => `
-    <div class="data-item">
-      <strong>${i + 1}.</strong> ${acc.firstName} ${acc.lastName} &lt;${acc.email}&gt;<br>
-      📍 ${acc.address}, ${acc.zipCode} ${acc.city}<br>
-      📞 ${acc.phone} | 🔑 ${acc.password}
+  preview.innerHTML = accountData.map((account, index) => `
+    <div class="account-card" id="account-${index}">
+      <div class="account-header">
+        <div class="account-name">${account.gender} ${account.firstName} ${account.lastName}</div>
+        <div class="gender-badge">${account.gender}</div>
+      </div>
+      
+      <div class="account-fields">
+        <div class="field">
+          <span class="field-label">Email:</span>
+          <span class="field-value" title="${account.email}">${account.email}</span>
+          <button class="copy-btn" onclick="copyToClipboard('${account.email}', this)">Copy</button>
+        </div>
+        
+        <div class="field">
+          <span class="field-label">Password:</span>
+          <span class="field-value">${account.password}</span>
+          <button class="copy-btn" onclick="copyToClipboard('${account.password}', this)">Copy</button>
+        </div>
+        
+        <div class="field">
+          <span class="field-label">Address:</span>
+          <span class="field-value" title="${account.address}">${account.address}</span>
+          <button class="copy-btn" onclick="copyToClipboard('${account.address}', this)">Copy</button>
+        </div>
+        
+        <div class="field">
+          <span class="field-label">ZIP/City:</span>
+          <span class="field-value">${account.zipCode} ${account.city}</span>
+          <button class="copy-btn" onclick="copyToClipboard('${account.zipCode} ${account.city}', this)">Copy</button>
+        </div>
+        
+        <div class="field">
+          <span class="field-label">Phone:</span>
+          <span class="field-value">${account.phone}</span>
+          <button class="copy-btn" onclick="copyToClipboard('${account.phone}', this)">Copy</button>
+        </div>
+        
+        <div class="field">
+          <span class="field-label">Country:</span>
+          <span class="field-value">${account.country}</span>
+          <button class="copy-btn" onclick="copyToClipboard('${account.country}', this)">Copy</button>
+        </div>
+      </div>
+      
+      <div class="profile-section">
+        <div class="profile-binding">
+          <select id="profile-select-${index}" onchange="bindProfile(${index})">
+            <option value="">-- Select Profile --</option>
+            <option value="create-new">🆕 Create New Profile</option>
+            <option value="adspower">AdsPower Profiles</option>
+            <option value="bas">BAS Profiles</option>
+          </select>
+          <button class="secondary" onclick="askBindProfile(${index})">Bind Profile</button>
+        </div>
+        <div id="profile-status-${index}" style="margin-top: 8px; font-size: 13px; color: var(--muted);"></div>
+      </div>
     </div>
   `).join('');
   
   document.getElementById('previewSection').style.display = 'block';
 }
 
-function clearData() {
-  accountData = [];
-  document.getElementById('previewSection').style.display = 'none';
+function copyToClipboard(text, button) {
+  navigator.clipboard.writeText(text).then(() => {
+    const originalText = button.textContent;
+    button.textContent = '✓';
+    button.classList.add('copied');
+    
+    setTimeout(() => {
+      button.textContent = originalText;
+      button.classList.remove('copied');
+    }, 1500);
+  }).catch(err => {
+    console.error('Copy failed:', err);
+    alert('Copy failed. Please copy manually: ' + text);
+  });
+}
+
+async function askBindProfile(index) {
+  const account = accountData[index];
+  const select = document.getElementById(`profile-select-${index}`);
+  const value = select.value;
+  
+  if (!value || value === 'adspower' || value === 'bas') {
+    alert('Please select a specific profile or "Create New Profile"');
+    return;
+  }
+  
+  if (value === 'create-new') {
+    const provider = confirm('Create new AdsPower profile?\nOK = AdsPower, Cancel = BAS') ? 'adspower' : 'bas';
+    
+    const statusDiv = document.getElementById(`profile-status-${index}`);
+    statusDiv.innerHTML = `<span style="color: var(--info);">Creating ${provider} profile...</span>`;
+    
+    // Will be created during registration
+    account.provider = provider;
+    account.profileId = 'new';
+    
+    statusDiv.innerHTML = `<span style="color: var(--good);">✓ Will create new ${provider} profile</span>`;
+  }
+}
+
+function bindProfile(index) {
+  // This would show available profiles from API
+  console.log('Bind profile for account', index);
+}
+
+async function saveAccountsToFile() {
+  if (accountData.length === 0) {
+    alert('No accounts to save');
+    return;
+  }
+  
+  try {
+    const response = await fetch('/api/save-accounts', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ accounts: accountData })
+    });
+    
+    if (response.ok) {
+      alert(`✓ ${accountData.length} accounts saved successfully!`);
+      
+      // Show saved indicator
+      accountData.forEach((_, index) => {
+        const card = document.getElementById(`account-${index}`);
+        if (card && !card.querySelector('.saved-indicator')) {
+          const header = card.querySelector('.account-header');
+          header.innerHTML += '<span class="saved-indicator">💾 SAVED</span>';
+        }
+      });
+    } else {
+      alert('Failed to save accounts');
+    }
+  } catch (error) {
+    console.error('Save error:', error);
+    alert('Error saving accounts: ' + error.message);
+  }
+}
+
+async function loadSavedAccounts() {
+  try {
+    const response = await fetch('/api/load-accounts');
+    if (!response.ok) throw new Error('Failed to load accounts');
+    
+    const data = await response.json();
+    accountData = data.accounts || [];
+    
+    if (accountData.length === 0) {
+      alert('No saved accounts found');
+      return;
+    }
+    
+    displayAccountPreview();
+    alert(`✓ Loaded ${accountData.length} saved accounts`);
+  } catch (error) {
+    console.error('Load error:', error);
+    alert('Error loading accounts: ' + error.message);
+  }
+}
+
+function exportCSV() {
+  if (accountData.length === 0) {
+    alert('No data to export');
+    return;
+  }
+  
+  const headers = ['email', 'gender', 'firstName', 'lastName', 'address', 'zipCode', 'city', 'phone', 'password', 'country', 'profileId', 'status'];
+  
+  const csv = [
+    headers.join(','),
+    ...accountData.map(acc => 
+      headers.map(h => {
+        const val = acc[h] || '';
+        return val.toString().includes(',') ? `"${val}"` : val;
+      }).join(',')
+    )
+  ].join('\n');
+  
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `otto-accounts-${Date.now()}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
 }
 
 function downloadTemplate() {
-  const csv = 'email,firstName,lastName,address,zipCode,city,phone\n' +
-               'test@example.com,Max,Mustermann,Musterstraße 1,10115,Berlin,+4915112345678\n' +
-               'test2@example.com,Anna,Schmidt,Hauptstraße 42,20095,Hamburg,+4915198765432';
+  const template = 'email,gender,firstName,lastName,address,zipCode,city,phone\nmax@icloud.com,Herr,Max,Mustermann,Hauptstraße 1,10115,Berlin,+4915112345678\nanna@icloud.com,Frau,Anna,Schmidt,Bergstraße 42,20095,Hamburg,+4915198765432';
   
-  const blob = new Blob([csv], { type: 'text/csv' });
+  const blob = new Blob([template], { type: 'text/csv' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
   a.download = 'otto-registration-template.csv';
   a.click();
+  URL.revokeObjectURL(url);
 }
 
-async function startRegistration() {
-  if (accountData.length === 0) {
-    alert('No account data to register');
-    return;
+function clearData() {
+  if (confirm('Clear all generated data? This cannot be undone.')) {
+    accountData = [];
+    document.getElementById('previewSection').style.display = 'none';
   }
-  
-  registrationActive = true;
-  registrationResults = [];
-  
-  document.getElementById('progressSection').style.display = 'block';
-  document.getElementById('statusLog').style.display = 'block';
-  
-  const statusLog = document.getElementById('statusLog');
-  const statTotal = document.getElementById('statTotal');
-  const statSuccess = document.getElementById('statSuccess');
-  const statFailed = document.getElementById('statFailed');
-  const statProgress = document.getElementById('statProgress');
-  
-  statTotal.textContent = accountData.length;
-  statSuccess.textContent = '0';
-  statFailed.textContent = '0';
-  statProgress.textContent = '0%';
-  
-  statusLog.innerHTML = '<div class="log-info">🚀 Starting registration process...</div>';
-  
-  let successCount = 0;
-  let failedCount = 0;
-  
-  for (let i = 0; i < accountData.length; i++) {
-    if (!registrationActive) {
-      statusLog.innerHTML += '<div class="log-info">⏸️ Registration stopped by user</div>';
-      break;
-    }
-    
-    const account = accountData[i];
-    
-    statusLog.innerHTML += `<div class="log-info">📝 [${i + 1}/${accountData.length}] Registering ${account.email}...</div>`;
-    statusLog.scrollTop = statusLog.scrollHeight;
-    
-    try {
-      const result = await registerAccount(account);
-      
-      if (result.success) {
-        successCount++;
-        registrationResults.push({ ...account, status: 'success', profileId: result.profileId });
-        statusLog.innerHTML += `<div class="log-success">✅ Success: ${account.email} (Profile: ${result.profileId})</div>`;
-      } else {
-        failedCount++;
-        registrationResults.push({ ...account, status: 'failed', error: result.error });
-        statusLog.innerHTML += `<div class="log-error">❌ Failed: ${account.email} - ${result.error}</div>`;
-      }
-    } catch (error) {
-      failedCount++;
-      registrationResults.push({ ...account, status: 'failed', error: error.message });
-      statusLog.innerHTML += `<div class="log-error">❌ Error: ${account.email} - ${error.message}</div>`;
-    }
-    
-    statSuccess.textContent = successCount;
-    statFailed.textContent = failedCount;
-    statProgress.textContent = Math.round(((i + 1) / accountData.length) * 100) + '%';
-    
-    statusLog.scrollTop = statusLog.scrollHeight;
-    
-    // Wait between registrations to avoid rate limiting
-    await new Promise(resolve => setTimeout(resolve, 2000));
-  }
-  
-  statusLog.innerHTML += `<div class="log-info">✨ Registration complete! ${successCount} succeeded, ${failedCount} failed.</div>`;
-  registrationActive = false;
-}
-
-async function registerAccount(accountData) {
-  // This will call the companion server API
-  const companionUrl = 'https://127.0.0.1:8787';
-  
-  try {
-    const response = await fetch(`${companionUrl}/register/otto`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(accountData)
-    });
-    
-    const result = await response.json();
-    return result;
-  } catch (error) {
-    console.error('Registration API error:', error);
-    throw error;
-  }
-}
-
-function stopRegistration() {
-  registrationActive = false;
 }
 
 function downloadResults() {
-  const csv = 'email,firstName,lastName,password,profileId,status,error\n' +
-    registrationResults.map(r => 
-      `${r.email},${r.firstName},${r.lastName},${r.password},${r.profileId || ''},${r.status},${r.error || ''}`
-    ).join('\n');
-  
-  const blob = new Blob([csv], { type: 'text/csv' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `otto-registration-results-${Date.now()}.csv`;
-  a.click();
+  exportCSV();
 }
+
+async function startRegistration() {
+  alert('Registration automation will be available after profile binding is implemented. For now, save your accounts and use them manually.');
+}
+
+// Initialize
+document.addEventListener('DOMContentLoaded', () => {
+  console.log('Otto.de Bulk Registration Ready');
+});
 </script>
 
 </body>

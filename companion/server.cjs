@@ -17,6 +17,7 @@ const {
   getLoggedInProfiles
 } = require('../runner/profile-metadata.cjs');
 const { createProfileAndRegister } = require('../runner/otto-registration.cjs');
+const { saveAccounts, loadAccounts, updateAccount } = require('../runner/account-storage.cjs');
 
 const HOST = process.env.HOST || '0.0.0.0';
 const PORT = Number(process.env.PORT || 8787);
@@ -348,6 +349,72 @@ async function requestHandler(req, res) {
       
     } catch (error) {
       console.error('[API] Registration error:', error);
+      return send(res, 500, { ok: false, error: error.message }, origin);
+    }
+  }
+  
+  // Save accounts endpoint
+  if (req.url === '/api/save-accounts' && req.method === 'POST') {
+    try {
+      const body = await readBody(req);
+      const { accounts } = body;
+      
+      if (!accounts || !Array.isArray(accounts)) {
+        return send(res, 400, { ok: false, error: 'accounts array required' }, origin);
+      }
+      
+      console.log(`[API] Saving ${accounts.length} accounts`);
+      
+      const saved = saveAccounts(accounts);
+      
+      return send(res, 200, {
+        ok: true,
+        saved: saved.length,
+        message: `${saved.length} accounts saved`
+      }, origin);
+      
+    } catch (error) {
+      console.error('[API] Save accounts error:', error);
+      return send(res, 500, { ok: false, error: error.message }, origin);
+    }
+  }
+  
+  // Load accounts endpoint
+  if (req.url === '/api/load-accounts' && req.method === 'GET') {
+    try {
+      const accounts = loadAccounts();
+      
+      return send(res, 200, {
+        ok: true,
+        accounts,
+        count: accounts.length
+      }, origin);
+      
+    } catch (error) {
+      console.error('[API] Load accounts error:', error);
+      return send(res, 500, { ok: false, error: error.message }, origin);
+    }
+  }
+  
+  // Update account endpoint
+  if (req.url === '/api/update-account' && req.method === 'POST') {
+    try {
+      const body = await readBody(req);
+      const { accountId, updates } = body;
+      
+      if (!accountId || !updates) {
+        return send(res, 400, { ok: false, error: 'accountId and updates required' }, origin);
+      }
+      
+      const updated = updateAccount(accountId, updates);
+      
+      return send(res, 200, {
+        ok: true,
+        account: updated
+      }, origin);
+      
+    } catch (error) {
+      console.error('[API] Update account error:', error);
       return send(res, 500, { ok: false, error: error.message }, origin);
     }
   }
