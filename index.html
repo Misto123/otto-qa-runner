@@ -869,9 +869,12 @@ function loadProductConfig() {
   saveFormData();
 }
 
-// Form handling
-$('qaForm').addEventListener('submit', e => {
-  e.preventDefault();
+// Form handling - wrapped in DOMContentLoaded
+document.addEventListener('DOMContentLoaded', () => {
+  const qaForm = $('qaForm');
+  if (qaForm) {
+    qaForm.addEventListener('submit', e => {
+      e.preventDefault();
   
   if (!validateForm()) return;
   
@@ -923,6 +926,8 @@ $('qaForm').addEventListener('submit', e => {
   $('json').textContent = JSON.stringify(cfg, null, 2);
   $('output').style.display = 'block';
   saveFormData();
+    });
+  }
 });
 
 // Test connection to companion
@@ -1034,15 +1039,24 @@ function showConnectionStatus(type, message) {
   }
 }
 
-$('testConnection').addEventListener('click', testConnection);
-
-// Auto-test on URL change
-$('companionUrl').addEventListener('change', () => {
-  $('runTest').disabled = true;
-  $('runTest').title = 'Test connection first';
-  $('connectionStatus').style.display = 'none';
-  $('connectionHelp').style.display = 'block';
-  $('connectionHelp').innerHTML = '<span style="color:var(--text-dim)">Click "Test Connection" to verify</span>';
+// Wrap companion connection handlers in DOMContentLoaded
+document.addEventListener('DOMContentLoaded', () => {
+  const testConnBtn = $('testConnection');
+  const companionUrlInput = $('companionUrl');
+  
+  if (testConnBtn) {
+    testConnBtn.addEventListener('click', testConnection);
+  }
+  
+  if (companionUrlInput) {
+    // Auto-test on URL change
+    companionUrlInput.addEventListener('change', () => {
+      $('runTest').disabled = true;
+      $('runTest').title = 'Test connection first';
+      $('connectionStatus').style.display = 'none';
+      $('connectionHelp').style.display = 'block';
+    });
+  }
 });
 
 async function runLocalTest() {
@@ -1195,11 +1209,22 @@ async function runLocalTest() {
     $('runTest').textContent = '▶ Run via AdsPower';
   }
 }
-$('runTest').addEventListener('click',runLocalTest);
 
-// Auto-save on input
-$('qaForm').addEventListener('input', saveFormData);
-$('qaForm').addEventListener('change', saveFormData);
+// Wrap run button and auto-save handlers in DOMContentLoaded
+document.addEventListener('DOMContentLoaded', () => {
+  const runTestBtn = $('runTest');
+  const qaForm = $('qaForm');
+  
+  if (runTestBtn) {
+    runTestBtn.addEventListener('click', runLocalTest);
+  }
+  
+  if (qaForm) {
+    // Auto-save on input
+    qaForm.addEventListener('input', saveFormData);
+    qaForm.addEventListener('change', saveFormData);
+  }
+});
 
 // Initialize: show login screen on load
 window.addEventListener('DOMContentLoaded', () => {
