@@ -2,21 +2,23 @@
  * BAS Proxy Configuration
  * Two Rebel mobile proxies for load balancing
  * 
- * Note: Username contains semicolon (ottovisits;p=1) which must be URL-encoded
+ * Note: Simple format without http:// prefix and without URL encoding
+ * The Remote Browser API handles protocol internally
  */
 
 const BAS_PROXIES = [
   {
     id: 'rebel-mobile-11',
     name: 'Rebel mobile 6903:8058',
-    // Username: ottovisits;p=1 (encoded as %3B for semicolon, %3D for equals)
-    // Password: LfjlMN)S*Cy74*_r (special chars allowed in password)
-    proxy: 'http://ottovisits%3Bp%3D1:LfjlMN)S*Cy74*_r@proxy2.rebelinternet.eu:5001'
+    // Simple format: username:password@host:port
+    // Username contains semicolon: ottovisits;p=1
+    // Password: LfjlMN)S*Cy74*_r (special chars allowed)
+    proxy: 'ottovisits;p=1:LfjlMN)S*Cy74*_r@proxy2.rebelinternet.eu:5001'
   },
   {
     id: 'rebel-mobile-23',
     name: 'Rebel mobile 6903:8072',
-    proxy: 'http://ottovisits%3Bp%3D2:LfjlMN)S*Cy74*_r@proxy2.rebelinternet.eu:5001'
+    proxy: 'ottovisits;p=2:LfjlMN)S*Cy74*_r@proxy2.rebelinternet.eu:5001'
   }
 ];
 

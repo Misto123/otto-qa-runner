@@ -4,7 +4,12 @@
  */
 
 const puppeteer = require('puppeteer-core');
-const { startProfile, stopProfile } = require('./remote-browser-client.cjs');
+const { startRemoteBrowser, stopRemoteBrowser } = require('./remote-browser-client.cjs');
+
+/**
+ * Sleep helper (replacement for deprecated page.waitForTimeout)
+ */
+const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
 /**
  * Check if user is logged in to Otto.de
@@ -63,7 +68,7 @@ async function manualLoginFlow(profileId, provider = 'adspower', options = {}) {
   try {
     // 1. Start profile
     console.log('[Manual Login] Starting browser profile...');
-    connection = await startProfile(profileId, provider);
+    connection = await startRemoteBrowser(profileId, provider);
     
     // 2. Connect via CDP
     console.log('[Manual Login] Connecting to browser...');
@@ -80,7 +85,7 @@ async function manualLoginFlow(profileId, provider = 'adspower', options = {}) {
     // 3. Navigate to Otto.de
     console.log(`[Manual Login] Navigating to ${siteUrl}...`);
     await page.goto(siteUrl, { waitUntil: 'networkidle0', timeout: 30000 });
-    await page.waitForTimeout(2000);
+    await sleep(2000);
     
     // 4. Accept cookies if present
     console.log('[Manual Login] Checking for cookie banner...');
@@ -88,7 +93,7 @@ async function manualLoginFlow(profileId, provider = 'adspower', options = {}) {
       const cookieButton = await page.$('button:has-text("Alle akzeptieren"), button#onetrust-accept-btn-handler');
       if (cookieButton) {
         await cookieButton.click();
-        await page.waitForTimeout(1000);
+        await sleep(1000);
         console.log('[Manual Login] ✓ Cookies accepted');
       }
     } catch (e) {
@@ -130,7 +135,7 @@ async function manualLoginFlow(profileId, provider = 'adspower', options = {}) {
     // Cleanup on error
     if (connection) {
       try {
-        await stopProfile(profileId, connection.browserId, provider);
+        await stopRemoteBrowser(connection.browserId, provider);
       } catch (e) {
         console.error('[Manual Login] Error stopping profile:', e);
       }
@@ -154,7 +159,7 @@ async function verifyLogin(profileId, provider = 'adspower', browserId) {
     
     // Get puppeteer URL (we need to reconnect)
     // For now, we'll use the remote browser API to get the connection
-    const { startProfile: getConnection } = require('./remote-browser-client.cjs');
+    const { startRemoteBrowser: getConnection } = require('./remote-browser-client.cjs');
     const activeConnection = await getConnection(profileId, provider);
     
     const puppeteerUrl = activeConnection.puppeteerUrl || activeConnection.ws.puppeteer;
@@ -218,7 +223,7 @@ async function completeManualLogin(profileId, provider, browserId, keepBrowserOp
     // Stop browser (unless keeping open)
     if (!keepBrowserOpen) {
       console.log('[Manual Login] Closing browser...');
-      await stopProfile(profileId, browserId, provider);
+      await stopRemoteBrowser(browserId, provider);
     }
     
     console.log('[Manual Login] ✅ Manual login complete!');

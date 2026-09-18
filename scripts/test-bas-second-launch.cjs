@@ -18,8 +18,8 @@ const fetch = globalThis.fetch;
 const REMOTE_BROWSER_API_URL = process.env.REMOTE_BROWSER_API_URL || 'http://65.21.199.228:3000';
 const REMOTE_BROWSER_API_KEY = process.env.REMOTE_BROWSER_API_KEY || 'JTYDA_7531D_98HGTR_YT154';
 
-// BAS proxy (URL-encoded)
-const BAS_PROXY = 'http://ottovisits%3Bp%3D1:LfjlMN)S*Cy74*_r@proxy2.rebelinternet.eu:5001';
+// BAS proxy (simple format without http:// or URL encoding)
+const BAS_PROXY = 'ottovisits;p=1:LfjlMN)S*Cy74*_r@proxy2.rebelinternet.eu:5001';
 
 /**
  * Make request and log everything
@@ -121,9 +121,9 @@ async function runTest() {
     console.log('Note: BAS profiles are created automatically on first launch');
     console.log('We will use a numeric profile ID (e.g., 1, 2, 3...)');
     
-    // For BAS, we just use a numeric ID
-    profileId = Math.floor(Math.random() * 10000) + 1000; // Random ID 1000-10999
-    console.log(`\n✅ Using Profile ID: ${profileId}`);
+    // For BAS, we use a numeric ID as STRING (API expects string)
+    profileId = String(Math.floor(Math.random() * 10000) + 1000); // Random ID "1000"-"10999"
+    console.log(`\n✅ Using Profile ID: ${profileId} (type: ${typeof profileId})`);
     
     // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     // STEP 2: First Browser Launch
