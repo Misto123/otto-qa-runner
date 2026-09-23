@@ -348,7 +348,23 @@ main{max-width:980px;margin:0 auto;padding:44px 22px 72px}.eyebrow{color:var(--a
     <input id="messageLanguage" type="hidden" value="de">
     <textarea id="messageText" style="display:none"></textarea>
     <input id="messageCount" type="hidden" value="0">
-    <input id="companionUrl" type="hidden" value="https://192.168.1.159:8787">
+    
+    <section class="panel" style="margin-top:20px">
+      <h2>Companion Server</h2>
+      <div class="grid">
+        <div class="full">
+          <label for="companionUrl">Companion Server URL</label>
+          <input id="companionUrl" type="url" value="https://192.168.1.159:8787" placeholder="https://192.168.1.159:8787">
+          <div class="hint">The local server that controls browsers. Must be accessible from this device.</div>
+        </div>
+      </div>
+      <div class="actions" style="margin-top:16px">
+        <button id="autoDetectBtn" class="secondary" type="button">🔍 Auto-Detect IPs</button>
+        <button id="testConnectionBtn" class="secondary" type="button">🔌 Test Connection</button>
+      </div>
+      <div id="autoDetectResult" style="display:none;margin-top:12px;padding:12px;background:var(--panel2);border-radius:10px;font-size:13px"></div>
+      <div id="connectionStatus" style="display:none;margin-top:12px;padding:12px;border-radius:10px;font-size:13px"></div>
+    </section>
     
     <div class="actions">
       <button id="runTest" class="primary" type="button">▶ Run via AdsPower</button>
@@ -428,6 +444,117 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 });
 
+// Auto-detect companion IPs
+async function autoDetectCompanionIPs() {
+  const resultDiv = $('autoDetectResult');
+  const companionUrlInput = $('companionUrl');
+  
+  resultDiv.style.display = 'block';
+  resultDiv.innerHTML = '🔍 Scanning for companion server...';
+  resultDiv.style.background = 'var(--panel2)';
+  resultDiv.style.borderLeft = '3px solid var(--accent)';
+  
+  // Common IP ranges to check
+  const ipRanges = [
+    '192.168.1.',
+    '192.168.0.',
+    '10.0.0.',
+    '172.16.0.',
+    '100.123.218.'
+  ];
+  
+  const ipsToCheck = [];
+  
+  // Generate IPs to check (1-255 for each range)
+  for (const range of ipRanges) {
+    for (let i = 1; i <= 255; i++) {
+      ipsToCheck.push(`${range}${i}`);
+    }
+  }
+  
+  resultDiv.innerHTML = `🔍 Checking ${ipsToCheck.length} possible IPs...`;
+  
+  const workingIPs = [];
+  const batchSize = 20;
+  
+  for (let i = 0; i < ipsToCheck.length; i += batchSize) {
+    const batch = ipsToCheck.slice(i, i + batchSize);
+    const promises = batch.map(async (ip) => {
+      try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 2000);
+        
+        const response = await fetch(`https://${ip}:8787/health`, {
+          signal: controller.signal,
+          mode: 'cors'
+        });
+        
+        clearTimeout(timeoutId);
+        
+        if (response.ok) {
+          const data = await response.json();
+          if (data.ok && data.service === 'otto-qa-companion') {
+            return `https://${ip}:8787`;
+          }
+        }
+      } catch (e) {
+        // Ignore errors (unreachable IPs)
+      }
+      return null;
+    });
+    
+    const results = await Promise.all(promises);
+    workingIPs.push(...results.filter(ip => ip !== null));
+    
+    resultDiv.innerHTML = `🔍 Scanned ${Math.min(i + batchSize, ipsToCheck.length)}/${ipsToCheck.length} IPs... Found: ${workingIPs.length}`;
+    
+    if (workingIPs.length > 0) {
+      break; // Stop scanning once we find at least one
+    }
+  }
+  
+  if (workingIPs.length > 0) {
+    resultDiv.style.background = '#1a3d1a';
+    resultDiv.style.borderLeft = '3px solid var(--good)';
+    resultDiv.innerHTML = `
+      ✅ Found ${workingIPs.length} companion server(s):<br><br>
+      ${workingIPs.map((url, idx) => `
+        <button class="secondary" type="button" onclick="$('companionUrl').value='${url}'; testConnection();" style="margin:4px">
+          ${idx === 0 ? '⭐ ' : ''}Use ${url}
+        </button>
+      `).join('<br>')}
+      <br><br>
+      <small>Click a button to select and test that URL</small>
+    `;
+    
+    // Auto-select the first one
+    companionUrlInput.value = workingIPs[0];
+  } else {
+    resultDiv.style.background = '#3d1a1a';
+    resultDiv.style.borderLeft = '3px solid var(--danger)';
+    resultDiv.innerHTML = `
+      ❌ No companion server found.<br><br>
+      <strong>Troubleshooting:</strong><br>
+      • Make sure the companion server is running<br>
+      • Check you're on the same network<br>
+      • Try manually entering the URL<br><br>
+      <small>Tried common IP ranges: ${ipRanges.join(', ')}</small>
+    `;
+  }
+}
+
+// Initialize auto-detect button
+document.addEventListener('DOMContentLoaded', () => {
+  const autoDetectBtn = $('autoDetectBtn');
+  if (autoDetectBtn) {
+    autoDetectBtn.addEventListener('click', autoDetectCompanionIPs);
+  }
+  
+  const testConnectionBtn = $('testConnectionBtn');
+  if (testConnectionBtn) {
+    testConnectionBtn.addEventListener('click', testConnection);
+  }
+});
 
 // Validation functions
 function validateURL(input) {
@@ -938,11 +1065,16 @@ async function testConnection() {
     return;
   }
   
-  $('testConnection').disabled = true;
-  $('testConnection').textContent = '🔄 Testing... (10s timeout)';
-  $('connectionStatus').style.display = 'none';
-  $('connectionHelp').style.display = 'none';
-  $('connectionHelp').innerHTML = '';
+  const btn = $('testConnectionBtn');
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = '🔄 Testing... (10s timeout)';
+  }
+  
+  const statusEl = $('connectionStatus');
+  if (statusEl) {
+    statusEl.style.display = 'none';
+  }
   
   const timeout = new Promise((_, reject) => 
     setTimeout(() => reject(new Error('Connection timeout after 10 seconds')), 10000)
@@ -964,8 +1096,6 @@ async function testConnection() {
       showConnectionStatus('success', `✅ Connected! Companion is ready${data.https ? ' (HTTPS)' : ''}`);
       $('runTest').disabled = false;
       $('runTest').title = '';
-      $('connectionHelp').style.display = 'block';
-      $('connectionHelp').innerHTML = '<span style="color:var(--good);font-weight:bold">✓ Ready to run tests</span>';
     } else {
       throw new Error('Invalid response from companion');
     }
@@ -974,48 +1104,43 @@ async function testConnection() {
     const isCertError = error.message.includes('Failed to fetch') || error.message.includes('NetworkError');
     const isLocalhost = companionUrl.includes('127.0.0.1') || companionUrl.includes('localhost');
     
-    if (isHttps && isCertError && isLocalhost) {
-      // Local HTTPS - certificate issue
-      showConnectionStatus('warning', `⚠️ Cannot connect to local companion`);
-      $('connectionHelp').style.display = 'block';
-      $('connectionHelp').innerHTML = `
-        <div style="background:var(--panel2);padding:1rem;border-radius:8px;margin-top:0.5rem">
-          <strong>Local HTTPS Setup Required:</strong><br>
+    if (isHttps && isCertError) {
+      showConnectionStatus('warning', `⚠️ Cannot connect to companion`);
+      if (statusEl) {
+        const helpText = document.createElement('div');
+        helpText.style.cssText = 'background:var(--panel2);padding:12px;border-radius:8px;margin-top:8px;font-size:13px';
+        helpText.innerHTML = `
+          <strong>HTTPS Certificate Required:</strong><br>
           1. Open <a href="${companionUrl}" target="_blank" style="color:var(--accent)">${companionUrl}</a> in new tab<br>
           2. Accept the security warning (self-signed certificate)<br>
           3. Come back and click Test Connection again
-        </div>
-      `;
-    } else if (isCertError) {
-      // Remote connection issue
-      showConnectionStatus('error', `❌ Cannot connect: ${error.message || 'Connection failed'}`);
-      $('connectionHelp').style.display = 'block';
-      $('connectionHelp').innerHTML = `
-        <div style="background:var(--panel2);padding:1rem;border-radius:8px;margin-top:0.5rem">
-          <strong>Connection Failed</strong><br><br>
-          Troubleshooting:<br>
-          • Is the companion server running? <code>HTTPS=true node companion/server.cjs</code><br>
-          • Is the URL correct? Currently: <code>${companionUrl}</code><br>
-          • If using HTTPS with self-signed cert, accept it first: <a href="${companionUrl}" target="_blank" style="color:var(--accent)">Open in new tab</a><br>
-          • Check firewall/network settings if connecting remotely
-        </div>
-      `;
+        `;
+        statusEl.parentElement.appendChild(helpText);
+      }
     } else {
       showConnectionStatus('error', `❌ Cannot connect: ${error.message || 'Connection failed'}`);
-      $('connectionHelp').style.display = 'block';
-      $('connectionHelp').innerHTML = `
-        <div style="background:var(--panel2);padding:1rem;border-radius:8px;margin-top:0.5rem">
-          <strong>Error:</strong> ${error.message || 'Unknown error'}<br><br>
-          Make sure the companion server is running on the specified URL.
-        </div>
-      `;
+      if (statusEl) {
+        const helpText = document.createElement('div');
+        helpText.style.cssText = 'background:var(--panel2);padding:12px;border-radius:8px;margin-top:8px;font-size:13px';
+        helpText.innerHTML = `
+          <strong>Connection Failed</strong><br><br>
+          Troubleshooting:<br>
+          • Is the companion server running?<br>
+          • Is the URL correct? Currently: <code>${companionUrl}</code><br>
+          • Check firewall/network settings if connecting remotely<br>
+          • Try clicking "🔍 Auto-Detect IPs" to find the server
+        `;
+        statusEl.parentElement.appendChild(helpText);
+      }
     }
     
     $('runTest').disabled = true;
     $('runTest').title = 'Test connection first';
   } finally {
-    $('testConnection').disabled = false;
-    $('testConnection').textContent = '🔌 Test Connection';
+    if (btn) {
+      btn.disabled = false;
+      btn.textContent = '🔌 Test Connection';
+    }
   }
 }
 
