@@ -348,7 +348,7 @@ main{max-width:980px;margin:0 auto;padding:44px 22px 72px}.eyebrow{color:var(--a
     <input id="messageLanguage" type="hidden" value="de">
     <textarea id="messageText" style="display:none"></textarea>
     <input id="messageCount" type="hidden" value="0">
-    <input id="companionUrl" type="hidden" value="https://127.0.0.1:8787">
+    <input id="companionUrl" type="hidden" value="https://192.168.1.159:8787">
     
     <div class="actions">
       <button id="runTest" class="primary" type="button">▶ Run via AdsPower</button>
@@ -531,7 +531,7 @@ function restoreFormData() {
     $('captcha').checked = data.captcha !== undefined ? data.captcha : false;
     
     // Restore companion URL (allow any valid URL)
-    let companionUrl = data.companionUrl || 'https://127.0.0.1:8787';
+    let companionUrl = data.companionUrl || 'https://192.168.1.159:8787';
     $('companionUrl').value = companionUrl;
     
     $('sendMessage').checked = data.sendMessage !== undefined ? data.sendMessage : false;
@@ -597,7 +597,7 @@ let currentLoginSession = null;
 
 // Get API base URL from companion URL
 function getApiBase() {
-  const companionUrl = $('companionUrl').value.trim() || 'https://127.0.0.1:8787';
+  const companionUrl = $('companionUrl').value.trim() || 'https://192.168.1.159:8787';
   return companionUrl;
 }
 
@@ -1114,7 +1114,7 @@ async function runLocalTest() {
     $('runTest').textContent = '▶ Run via AdsPower';
   }
   
-  const companionUrl = $('companionUrl').value.trim() || 'https://127.0.0.1:8787';
+  const companionUrl = $('companionUrl').value.trim() || 'https://192.168.1.159:8787';
   
   const totalVisits = +$('totalVisits').value || 9;
   const avgTimePerVisit = 45; // seconds
