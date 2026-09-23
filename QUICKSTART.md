@@ -1,245 +1,248 @@
 # Otto QA Runner - Quick Start Guide
 
-## 🚀 For Team Members
+## 🚀 Getting Started in 3 Steps
 
-### Setup (One-Time)
-
-**1. Clone Repository**
-```bash
-git clone https://github.com/Misto123/otto-qa-runner.git
-cd otto-qa-runner
-npm install
-```
-
-**2. Set API Credentials**
-```bash
-export REMOTE_BROWSER_API_URL="http://65.21.199.228:3000"
-export REMOTE_BROWSER_API_KEY="JTYDA_7531D_98HGTR_YT154"
-```
-
-**3. Start Companion**
-```bash
-HTTPS=true node companion/server.cjs
-```
-
-You should see:
-```
-✅ Using Remote Browser API: http://65.21.199.228:3000
-✅ Companion listening on https://0.0.0.0:8787
-```
-
-**4. Open Web Interface**
-
-URL: https://otto-qa-runner.vercel.app  
-Password: `rereeu`
-
-**5. Run Tests**
-
-Select profiles → Configure test → Click "Run via AdsPower" → Done!
-
----
-
-## 🔧 For Server Admin
-
-### Monitor Remote Browser API Health
-
-**The Problem:** Nginx crashes → Port 8080 fails → All tests fail
-
-**The Solution:** Continuous monitoring with alerts
-
-### Setup Monitoring on Remote Browser API Server
+### Step 1: Start Companion Server
 
 ```bash
-# SSH into server
-ssh root@65.21.199.228
+cd /Users/northsea/ClaudeProjects/otto-qa-runner
 
-# Download monitor script
-cd /opt/remote-browser-api
-curl -O https://raw.githubusercontent.com/Misto123/otto-qa-runner/main/scripts/monitor-remote-browser-api.sh
-chmod +x monitor-remote-browser-api.sh
-
-# Test it
-./monitor-remote-browser-api.sh --api-key JTYDA_7531D_98HGTR_YT154
-
-# Create systemd service for continuous monitoring
-sudo tee /etc/systemd/system/remote-browser-monitor.service > /dev/null <<'EOF'
-[Unit]
-Description=Remote Browser API Health Monitor
-After=network.target nginx.service
-
-[Service]
-Type=simple
-User=root
-WorkingDirectory=/opt/remote-browser-api
-Environment="REMOTE_BROWSER_API_KEY=JTYDA_7531D_98HGTR_YT154"
-Environment="REMOTE_BROWSER_API_URL=http://65.21.199.228:3000"
-ExecStart=/opt/remote-browser-api/monitor-remote-browser-api.sh --api-key JTYDA_7531D_98HGTR_YT154 --continuous --interval 60
-Restart=always
-RestartSec=10
-StandardOutput=append:/var/log/remote-browser-monitor.log
-StandardError=append:/var/log/remote-browser-monitor.log
-
-[Install]
-WantedBy=multi-user.target
-EOF
-
-# Enable and start
-sudo systemctl daemon-reload
-sudo systemctl enable remote-browser-monitor
-sudo systemctl start remote-browser-monitor
-
-# Check status
-sudo systemctl status remote-browser-monitor
-
-# View logs
-sudo journalctl -u remote-browser-monitor -f
-```
-
-### Add Webhook Alerts (Optional)
-
-**For Slack:**
-1. Create Slack webhook: https://api.slack.com/messaging/webhooks
-2. Update service file:
-   ```bash
-   ExecStart=/opt/remote-browser-api/monitor-remote-browser-api.sh \
-     --api-key JTYDA_7531D_98HGTR_YT154 \
-     --continuous \
-     --interval 60 \
-     --webhook "https://hooks.slack.com/services/YOUR/WEBHOOK/URL"
-   ```
-3. Restart service:
-   ```bash
-   sudo systemctl restart remote-browser-monitor
-   ```
-
-### Monitor Checklist
-
-The script checks:
-- ✅ API endpoint (port 3000) - Main API
-- ✅ WebSocket proxy (port 8080) - Browser connections
-- ✅ Nginx service status
-- ✅ Sends alerts when issues detected
-
-### When Nginx Crashes
-
-**Symptoms:**
-- API endpoint still works (port 3000)
-- WebSocket fails (port 8080)
-- Tests fail with "403" or "ETIMEDOUT"
-
-**Fix:**
-```bash
-sudo systemctl restart nginx
-sudo systemctl status nginx
-```
-
-**Monitor will alert you automatically!**
-
----
-
-## 📊 Architecture
-
-```
-Team Member (anywhere)
-  ↓
-Web Interface (https://otto-qa-runner.vercel.app)
-  ↓
-Companion Server (local or VPS with env vars)
-  ↓
-Remote Browser API (http://65.21.199.228:3000)
-  ↓ port 3000: API requests
-  ↓ port 8080: WebSocket connections (nginx proxy)
-  ↓
-AdsPower VPS
-  ↓
-Browser Instances
-```
-
----
-
-## 🆘 Troubleshooting
-
-### Tests Fail with "403" or "ETIMEDOUT"
-
-**Problem:** Nginx crashed or port 8080 not accessible
-
-**Check:**
-```bash
-curl -s -o /dev/null -w "%{http_code}" http://65.21.199.228:8080
-```
-
-**Fix (on server):**
-```bash
-sudo systemctl restart nginx
-```
-
-### Companion Says "Using local AdsPower API"
-
-**Problem:** Environment variables not set
-
-**Fix:**
-```bash
 export REMOTE_BROWSER_API_URL="http://65.21.199.228:3000"
 export REMOTE_BROWSER_API_KEY="JTYDA_7531D_98HGTR_YT154"
 
-# Restart companion
-pkill -f companion/server.cjs
-HTTPS=true node companion/server.cjs
+HTTPS=true node companion/server.cjs > /tmp/companion.log 2>&1 &
 ```
 
-### No Profiles Showing in Web Interface
+**Check if running:**
+```bash
+ps aux | grep companion/server.cjs
+curl -k https://192.168.1.159:8787/health
+```
 
-**Problem:** Companion not connected or Remote Browser API down
+### Step 2: Open Web UI
+
+**Main Dashboard:**
+https://otto-qa-runner.vercel.app/
+
+**Registration Page:**
+https://otto-qa-runner.vercel.app/register.html
+
+### Step 3: Configure Companion URL
+
+⚠️ **IMPORTANT:** Do NOT use `127.0.0.1`
+
+✅ **Use network IP instead:**
+```
+https://192.168.1.159:8787
+```
+
+**Why?** Browser security blocks localhost connections from HTTPS sites.
+
+---
+
+## 🎯 Common Tasks
+
+### Manual Login
+
+1. Open: https://otto-qa-runner.vercel.app/
+2. Enter companion URL: `https://192.168.1.159:8787`
+3. Click: "🔌 Test Connection" (accept cert warning)
+4. Select provider: BAS or AdsPower
+5. Select profile: e.g., 42014 (BAS)
+6. Click: "Login to Otto.de"
+7. Log in manually in opened browser
+8. Click: "✓ I'm Logged In"
+
+### Bulk Registration
+
+1. Open: https://otto-qa-runner.vercel.app/register.html
+2. Enter companion URL: `https://192.168.1.159:8787`
+3. Click: "🎲 Generate Data" (generates test accounts)
+4. Review generated data
+5. Click: "💾 Save Accounts"
+6. Bind profiles (optional)
+7. Click: "🚀 Start Registration"
+
+### Import Existing Accounts
+
+**From CSV:**
+```bash
+./scripts/import-accounts.sh accounts.csv
+```
+
+**From JSON:**
+```bash
+node scripts/parse-accounts.cjs accounts.json
+```
+
+**From clipboard:**
+```bash
+# Copy data to clipboard, then:
+node scripts/parse-accounts.cjs --clipboard
+```
+
+---
+
+## 🔧 Troubleshooting
+
+### "Connection Lost" Error
+
+**Cause:** Using `127.0.0.1` instead of network IP
+
+**Fix:** Change companion URL to:
+```
+https://192.168.1.159:8787
+```
+
+### "Failed to fetch" Error
+
+**Causes:**
+1. Companion not running
+2. Self-signed cert not accepted
+3. Wrong URL
 
 **Fix:**
-1. Check companion is running
-2. Check Remote Browser API health:
-   ```bash
-   ./scripts/monitor-remote-browser-api.sh --api-key JTYDA_7531D_98HGTR_YT154
-   ```
+```bash
+# Check if running
+ps aux | grep companion
+
+# If not running, start it:
+export REMOTE_BROWSER_API_URL="http://65.21.199.228:3000"
+export REMOTE_BROWSER_API_KEY="JTYDA_7531D_98HGTR_YT154"
+HTTPS=true node companion/server.cjs > /tmp/companion.log 2>&1 &
+
+# Test connection
+curl -k https://192.168.1.159:8787/health
+```
+
+### Self-Signed Certificate Warning
+
+**This is normal!** Click:
+1. "Advanced"
+2. "Proceed anyway" or "Accept Risk"
+
+This is safe - it's your local server.
+
+### Check Logs
+
+```bash
+tail -f /tmp/companion.log
+```
 
 ---
 
-## 📝 Key Files
+## 📊 System Status
 
-- **`REMOTE_BROWSER_COMPLETE.md`** - Complete technical documentation
-- **`scripts/monitor-remote-browser-api.sh`** - Health monitoring script
-- **`companion/server.cjs`** - Companion server
-- **`runner/remote-browser-client.cjs`** - Remote Browser API client
-- **`runner/otto-runner.cjs`** - Main test runner
+### Available URLs
+
+| Service | URL | Notes |
+|---------|-----|-------|
+| Web UI | https://otto-qa-runner.vercel.app/ | Main dashboard |
+| Registration | https://otto-qa-runner.vercel.app/register.html | Bulk registration |
+| Companion API | https://192.168.1.159:8787 | Local server (use this!) |
+| Alternative | https://192.168.1.146:8787 | Backup IP |
+| VPN/Tailscale | https://100.123.218.77:8787 | Remote access |
+
+### Available Profiles
+
+| Provider | Total Profiles | Test Profile | Speed |
+|----------|----------------|--------------|-------|
+| BAS | 6,003 | 42014 | ~13-20s |
+| AdsPower | 200 | Various | ~20s |
+
+### API Endpoints
+
+```
+GET  /health                 → Server health check
+POST /login/start           → Start manual login
+POST /login/complete        → Confirm login complete
+GET  /login/status          → Check login status
+GET  /login/profiles        → List profiles
+POST /login/clear           → Clear session
+POST /register/otto         → Start Otto registration
+POST /api/save-accounts     → Save account data
+GET  /api/load-accounts     → Load saved accounts
+POST /api/update-account    → Update account
+```
 
 ---
 
-## 🎯 Quick Reference
+## 📁 File Locations
 
-| What | Where | Credentials |
-|------|-------|-------------|
-| Web Interface | https://otto-qa-runner.vercel.app | Password: `rereeu` |
-| Remote Browser API | http://65.21.199.228:3000 | Key: `JTYDA_7531D_98HGTR_YT154` |
-| WebSocket Proxy | ws://65.21.199.228:8080 | Auto via API key |
-| Companion (local) | https://localhost:8787 | Self-signed cert |
-| GitHub Repo | https://github.com/Misto123/otto-qa-runner | - |
+### Data Storage
+```
+data/registered-accounts.json    → Saved accounts
+data/login-sessions.json         → Active sessions
+```
+
+### Logs
+```
+/tmp/companion.log               → Companion server logs
+```
+
+### Scripts
+```
+scripts/import-accounts.sh       → Import CSV/JSON
+scripts/parse-accounts.cjs       → Parse various formats
+scripts/test-bas-second-launch.cjs → BAS testing
+```
 
 ---
 
-## ✅ Status
+## 🎓 Tips
 
-**Last Verified:** 2026-09-04
+1. **Always use network IP** (`192.168.1.159:8787`), never `127.0.0.1`
+2. **Accept the cert warning** - it's your local server, it's safe
+3. **Check logs** if something fails: `tail -f /tmp/companion.log`
+4. **Test connection first** before running tests (🔌 Test Connection button)
+5. **Bind profiles before registration** for faster automation
+6. **Save accounts frequently** to avoid data loss
 
-- ✅ Remote Browser API working
-- ✅ WebSocket proxy working (nginx fixed)
-- ✅ End-to-end tests passing (~24 seconds)
-- ✅ Monitoring script created
-- ✅ Documentation complete
+---
 
-**Ready for production use!** 🚀
+## 🚨 Common Mistakes
+
+❌ Using `https://127.0.0.1:8787`
+✅ Use `https://192.168.1.159:8787`
+
+❌ Not accepting self-signed cert
+✅ Click "Advanced" → "Proceed anyway"
+
+❌ Forgetting to start companion
+✅ Check with: `ps aux | grep companion`
+
+❌ Using wrong profile IDs
+✅ BAS: Use cloud profiles (e.g., 42014)
+✅ AdsPower: Any profile works
 
 ---
 
 ## 📞 Support
 
-**For questions:** Check documentation in repo  
-**For issues:** Run monitoring script to diagnose  
-**For nginx crashes:** Restart nginx on server (monitoring will alert)
+**Logs location:** `/tmp/companion.log`
 
-**Repository:** https://github.com/Misto123/otto-qa-runner
+**Check status:**
+```bash
+curl -k https://192.168.1.159:8787/health
+```
+
+**Restart companion:**
+```bash
+pkill -f companion/server.cjs
+export REMOTE_BROWSER_API_URL="http://65.21.199.228:3000"
+export REMOTE_BROWSER_API_KEY="JTYDA_7531D_98HGTR_YT154"
+HTTPS=true node companion/server.cjs > /tmp/companion.log 2>&1 &
+```
+
+---
+
+## ✅ You're Ready!
+
+Everything is set up and working. Just remember:
+
+1. Start companion
+2. Use network IP (192.168.1.159:8787)
+3. Accept cert warning
+4. Run your tests
+
+🚀 **Happy Testing!**
