@@ -350,27 +350,19 @@ main{max-width:980px;margin:0 auto;padding:44px 22px 72px}.eyebrow{color:var(--a
     <input id="messageCount" type="hidden" value="0">
     
     <section class="panel" style="margin-top:20px">
-      <h2>Companion Server Setup</h2>
-      <div style="background:#3d2a1a;border:1px solid var(--accent);padding:16px;border-radius:10px;margin-bottom:16px">
-        <strong style="color:var(--accent)">📍 Find Your IP Address:</strong><br>
+      <h2>Remote Browser API</h2>
+      <div style="background:#1a3d2a;border:1px solid var(--good);padding:16px;border-radius:10px;margin-bottom:16px">
+        <strong style="color:var(--good)">✅ Direct Connection</strong><br>
         <div style="margin-top:8px;font-size:13px;line-height:1.6">
-          1. On the Mac running companion, open Terminal and run:<br>
-          <code style="background:var(--panel2);padding:2px 6px;border-radius:4px">ifconfig | grep "inet " | grep -v 127.0.0.1</code><br><br>
-          
-          OR visit <a href="https://whoer.net" target="_blank" style="color:var(--accent)">whoer.net</a> on the Mac<br>
-          (Copy the IP address shown - should look like 192.168.x.x)
+          Connect directly to Remote Browser API (no companion needed!)<br>
+          Supports both <strong>AdsPower</strong> and <strong>BAS</strong> providers.
         </div>
       </div>
       <div class="grid">
         <div class="full">
-          <label for="macIpAddress">Mac IP Address (running companion)</label>
-          <input id="macIpAddress" type="text" placeholder="192.168.1.159" pattern="[0-9.]+">
-          <div class="hint">Enter just the IP (e.g., 192.168.1.159), not the full URL</div>
-        </div>
-        <div class="full">
-          <label for="companionUrl">Companion Server URL (auto-generated)</label>
-          <input id="companionUrl" type="url" value="https://192.168.1.159:8787" placeholder="https://192.168.1.159:8787" readonly style="background:var(--panel);color:var(--muted)">
-          <div class="hint">This is built automatically from the IP above</div>
+          <label for="companionUrl">Remote Browser API URL</label>
+          <input id="companionUrl" type="url" value="http://65.21.199.228:3000" placeholder="http://65.21.199.228:3000">
+          <div class="hint">The unified API that controls AdsPower and BAS browsers</div>
         </div>
       </div>
       <div class="actions" style="margin-top:16px">
@@ -457,30 +449,8 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 });
 
-// Auto-construct companion URL from IP address
+// Initialize test connection button
 document.addEventListener('DOMContentLoaded', () => {
-  const macIpInput = $('macIpAddress');
-  const companionUrlInput = $('companionUrl');
-  
-  if (macIpInput && companionUrlInput) {
-    // Extract IP from current URL if set
-    const currentUrl = companionUrlInput.value;
-    const ipMatch = currentUrl.match(/https?:\/\/([0-9.]+):/);
-    if (ipMatch) {
-      macIpInput.value = ipMatch[1];
-    }
-    
-    // Update URL whenever IP changes
-    macIpInput.addEventListener('input', () => {
-      const ip = macIpInput.value.trim();
-      if (ip) {
-        companionUrlInput.value = `https://${ip}:8787`;
-      } else {
-        companionUrlInput.value = 'https://192.168.1.159:8787';
-      }
-    });
-  }
-  
   const testConnectionBtn = $('testConnectionBtn');
   if (testConnectionBtn) {
     testConnectionBtn.addEventListener('click', testConnection);
@@ -992,7 +962,7 @@ document.addEventListener('DOMContentLoaded', () => {
 async function testConnection() {
   const companionUrl = $('companionUrl').value.trim();
   if (!companionUrl) {
-    showConnectionStatus('error', 'Please enter a companion URL');
+    showConnectionStatus('error', 'Please enter Remote Browser API URL');
     return;
   }
   
@@ -1023,52 +993,44 @@ async function testConnection() {
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     const data = await response.json();
     
-    if (data.ok && data.service === 'otto-qa-companion') {
-      showConnectionStatus('success', `✅ Connected! Companion is ready${data.https ? ' (HTTPS)' : ''}`);
+    // Remote Browser API format: {success: true, data: {...}}
+    // OR companion format: {ok: true, service: '...'}
+    if ((data.success && data.data) || (data.ok && data.service)) {
+      const providers = data.data?.providers || ['AdsPower', 'BAS'];
+      showConnectionStatus('success', `✅ Connected! Remote Browser API ready (${providers.length} providers)`);
       $('runTest').disabled = false;
       $('runTest').title = '';
     } else {
-      throw new Error('Invalid response from companion');
+      throw new Error('Invalid response from API');
     }
   } catch (error) {
-    const isHttps = companionUrl.startsWith('https://');
     const isCertError = error.message.includes('Failed to fetch') || error.message.includes('NetworkError');
-    const isLocalhost = companionUrl.includes('127.0.0.1') || companionUrl.includes('localhost');
     
-    if (isHttps && isCertError) {
-      showConnectionStatus('warning', `⚠️ Cannot connect to companion`);
-      if (statusEl) {
-        const helpText = document.createElement('div');
-        helpText.style.cssText = 'background:var(--panel2);padding:12px;border-radius:8px;margin-top:8px;font-size:13px';
-        helpText.innerHTML = `
-          <strong>HTTPS Certificate Required:</strong><br>
-          1. Open <a href="${companionUrl}" target="_blank" style="color:var(--accent)">${companionUrl}</a> in new tab<br>
-          2. Accept the security warning (self-signed certificate)<br>
-          3. Come back and click Test Connection again
-        `;
-        statusEl.parentElement.appendChild(helpText);
-      }
-    } else {
-      showConnectionStatus('error', `❌ Cannot connect: ${error.message || 'Connection failed'}`);
-      if (statusEl) {
-        const helpText = document.createElement('div');
-        helpText.style.cssText = 'background:var(--panel2);padding:12px;border-radius:8px;margin-top:8px;font-size:13px';
-        helpText.innerHTML = `
-          <strong>Connection Failed</strong><br><br>
-          Troubleshooting:<br>
-          • Is the companion server running?<br>
-          • Is the URL correct? Currently: <code>${companionUrl}</code><br>
-          • Check firewall/network settings if connecting remotely<br>
-          • Try clicking "🔍 Auto-Detect IPs" to find the server
-        `;
-        statusEl.parentElement.appendChild(helpText);
-      }
+    showConnectionStatus('error', `❌ Cannot connect: ${error.message || 'Connection failed'}`);
+    if (statusEl) {
+      const helpText = document.createElement('div');
+      helpText.style.cssText = 'background:var(--panel2);padding:12px;border-radius:8px;margin-top:8px;font-size:13px';
+      helpText.innerHTML = `
+        <strong>Connection Failed</strong><br><br>
+        Troubleshooting:<br>
+        • Is the Remote Browser API running?<br>
+        • URL: <code>${companionUrl}</code><br>
+        • Check firewall settings<br>
+        • Try: <code>http://65.21.199.228:3000</code> (public)<br>
+        • Or: <code>http://100.116.3.99:3000</code> (Tailscale)
+      `;
+      statusEl.parentElement.appendChild(helpText);
     }
     
     $('runTest').disabled = true;
     $('runTest').title = 'Test connection first';
   } finally {
     if (btn) {
+      btn.disabled = false;
+      btn.textContent = '🔌 Test Connection';
+    }
+  }
+}
       btn.disabled = false;
       btn.textContent = '🔌 Test Connection';
     }
